@@ -41,6 +41,25 @@ public class HttpRetrieval {
     }));
     
     /**
+     * Creates a new instance with a copy of this instance's configuration.
+     * May return null if no copy could be created.
+     * @return new instance with all configuration copied
+     */
+    public HttpRetrieval copyConfiguration() {
+        HttpRetrieval newInstance = null;
+        try {
+            newInstance = this.getClass().newInstance();
+        } catch (Exception ex) {
+            logger.warn("Unable to create new instance of class.", ex);
+            return null;
+        }
+        
+        copyConfigurationTo(newInstance);
+        
+        return newInstance;
+    }
+    
+    /**
      * Copies configuration to another instance of HttpRetrieval.
      * Result data will not be copied, so this method can be used to help on
      * instantiation of fresh objects using this instance as a prototype.

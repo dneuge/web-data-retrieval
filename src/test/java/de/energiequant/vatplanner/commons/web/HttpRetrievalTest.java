@@ -40,6 +40,11 @@ import uk.org.lidalia.slf4jtest.TestLoggerFactory;
 public class HttpRetrievalTest {
     TestLogger testLogger = TestLoggerFactory.getTestLogger(HttpRetrieval.class);
     
+    /**
+     * Used for testing copy creation.
+     */
+    public static class HttpRetrievalDerived extends HttpRetrieval {}
+    
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     
@@ -126,6 +131,48 @@ public class HttpRetrievalTest {
         RequestConfig requestConfig = setRequestConfigs.iterator().next();
         
         return requestConfig;
+    }
+    
+    @Test
+    public void testCopyConfiguration_anyCall_copiesConfigurationToNewInstance() {
+        HttpRetrieval spyHttpRetrieval = spy(HttpRetrieval.class);
+        
+        HttpRetrieval newInstance = spyHttpRetrieval.copyConfiguration();
+        
+        verify(spyHttpRetrieval).copyConfigurationTo(same(newInstance));
+    }
+    
+    @Test
+    public void testCopyConfiguration_derivedClass_returnsNewInstanceOfDerivedClass() {
+        HttpRetrieval original = new HttpRetrievalDerived();
+        
+        HttpRetrieval copied = original.copyConfiguration();
+        
+        assertThat(copied, is(instanceOf(HttpRetrievalDerived.class)));
+    }
+    
+    @Test
+    public void testCopyConfiguration_inaccessibleDerivedClass_returnsNull() {
+        HttpRetrieval original = new HttpRetrieval(){};
+        
+        HttpRetrieval res = original.copyConfiguration();
+        
+        assertThat(res, is(nullValue()));
+    }
+    
+    @Test
+    public void testCopyConfiguration_inaccessibleDerivedClass_logsWarning() {
+        HttpRetrieval original = new HttpRetrieval(){};
+        
+        original.copyConfiguration();
+        
+        // it seems we can not easily compare events which wrap a Throwable :(
+        List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents().stream()
+            .filter((LoggingEvent t) -> t.getLevel() == Level.WARN)
+            .collect(Collectors.toList());
+        assertThat(loggingEvents.size(), is(1));
+        LoggingEvent actualEvent = loggingEvents.iterator().next();
+        assertThat(actualEvent.getMessage(), is("Unable to create new instance of class."));
     }
     
     @Test
