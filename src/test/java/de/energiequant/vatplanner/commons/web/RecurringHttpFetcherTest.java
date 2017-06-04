@@ -175,9 +175,7 @@ public class RecurringHttpFetcherTest {
     @Test
     public void testFetch_initiallyWithoutUrl_logsError() {
         // Arrange
-        //HttpClient mockClient = mock(HttpClient.class);
         RecurringHttpFetcher<Object> fetcher = new RecurringHttpFetcher<>();
-        //fetcher.setHttpClient(mockClient);
         
         // Act
         fetcher.fetch();

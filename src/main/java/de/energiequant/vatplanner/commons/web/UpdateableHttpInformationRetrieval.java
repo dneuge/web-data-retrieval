@@ -1,6 +1,5 @@
 package de.energiequant.vatplanner.commons.web;
 
-import de.energiequant.vatplanner.commons.web.HttpRetrieval;
 import de.energiequant.vatplanner.commons.web.entities.RetrievedInformation;
 import java.net.URL;
 import java.time.Duration;
@@ -13,56 +12,32 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A fetcher which periodically and asynchronously updates and holds information
- * from remote servers.
- * Source URL will be chosen at random from a set of multiple possible URLs for
- * basic load-balancing implemented on client-side.
- * Consecutive failure in retrieving the information (from any URL) will
- * trigger a configurable callback for further error handling upon exceeding the
- * configured error count threshold.
- * A parser will be invoked upon retrieval of raw body data to parse/process
- * the information. Using interfaces, the parser may provide information to
- * update fetcher configuration for next retrievals:
- * <ul>
- * <li>
- * The set of URLs to be used on next retrieval can be replaced, thus enabling
- * the payload protocol to issue permanently redirect to a new location.
- * </li>
- * <li>
- * Payload protocols may restrict the actual fetch interval (compared to the
- * preferred interval set initially by the application).
- * </li>
- * </ul>
- * @param <T> type of information upon parsing/processing
- */
-public class RecurringHttpFetcher<T> {
+public class UpdateableHttpInformationRetrieval<T> {
     private static final Logger logger = LoggerFactory.getLogger(RecurringHttpFetcher.class.getName());
     
     private HttpRetrieval templateHttpRetrieval = null;
     private RetrievedInformation<T> retrievedInformation = null;
-    private Duration preferredRetrievalInterval = null;
-    private Duration actualRetrievalInterval = Duration.of(30, ChronoUnit.MINUTES);
     private List<URL> nextRetrievalUrls = new ArrayList<>();
     
     private final Random random = new Random();
+
+    public UpdateableHttpInformationRetrieval() {
+    }
     
-    /**
-     * (Re-)Schedules the fetcher to run at the configured interval.
-     * Job will be triggered immediately if runNow is being requested.
-     * @param runNow Should job be triggered immediately?
-     */
-    public void schedule(final boolean runNow) {
+    public void update() {
         
     }
     
-    /**
-     * Unschedules the fetcher. Already running fetches may continue but
-     * scheduler will cease to trigger further runs.
-     */
-    public void unschedule() {
+    public void addSuccessListener(NotificationHubListener<UpdateableHttpInformationRetrieval<T>> listener) {
         
     }
+    
+    public void addErrorListener(NotificationHubListener<UpdateableHttpInformationRetrieval<T>> listener) {
+        
+    }
+    
+    
+    
     
     /**
      * Returns all URLs from which next retrieval URL will be used at random.
@@ -76,9 +51,7 @@ public class RecurringHttpFetcher<T> {
     
     /**
      * Sets the URLs to be chosen from on next retrieval. Only one URL will be
-     * used at a time, chosen randomly on each run. Note that some retrieved
-     * information contains redirect instructions so these URLs may be
-     * externally updated over time.
+     * used at a time, chosen randomly on each run.
      * @param urls URLs to choose from randomly
      */
     public void setNextRetrievalUrls(final Collection<URL> urls) {
@@ -98,25 +71,6 @@ public class RecurringHttpFetcher<T> {
         synchronized (this) {
             nextRetrievalUrls = copiedUrls;
         }
-    }
-    
-    /**
-     * Sets the preferred interval to retrieve information at. Actual intervals
-     * may differ if preferred interval is more frequent than permitted.
-     * @param interval preferred (not actual) interval
-     */
-    public void setPreferredRetrievalInterval(final Duration interval) {
-        
-    }
-
-    /**
-     * Returns the current actually used interval to retrieve information at.
-     * This interval may be higher than the preferred one if external source
-     * asks us to obey a minimum interval.
-     * @return actual interval currently used to retrieve information
-     */
-    public Duration getActualRetrievalInterval() {
-        return actualRetrievalInterval;
     }
     
     /**
