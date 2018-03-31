@@ -55,9 +55,12 @@ public class HttpRetrieval {
     /**
      * Sets all internally used timeouts to the given duration.
      * @param timeout generic timeout duration
+     * @return same instance to enable method-chaining
      */
-    public void setTimeout(final Duration timeout) {
+    public HttpRetrieval setTimeout(final Duration timeout) {
         this.timeout = timeout;
+        
+        return this;
     }
     
     /**
@@ -73,19 +76,18 @@ public class HttpRetrieval {
      * Null or user agent strings only consisting of white-spaces will not be
      * accepted.
      * @param userAgent complete user agent string to use
+     * @return same instance for method-chaining
      */
-    public void setUserAgent(final String userAgent) {
+    public HttpRetrieval setUserAgent(final String userAgent) {
         if (userAgent == null) {
             logger.warn("User-agent string is required and cannot be set to null! Using previous/default value.");
-            return;
-        }
-        
-        if (userAgent.trim().isEmpty()) {
+        } else if (userAgent.trim().isEmpty()) {
             logger.warn("User-agent string is required and cannot be set to empty/white-space string! Using previous/default value.");
-            return;
+        } else {
+            this.userAgent = userAgent;
         }
         
-        this.userAgent = userAgent;
+        return this;
     }
     
     /**
@@ -99,8 +101,9 @@ public class HttpRetrieval {
     /**
      * Sets the maximum number of redirects that should be followed.
      * @param maximumFollowedRedirects maximum number of redirects to follow
+     * @return same instance to enable method-chaining
      */
-    public void setMaximumFollowedRedirects(int maximumFollowedRedirects) {
+    public HttpRetrieval setMaximumFollowedRedirects(int maximumFollowedRedirects) {
         if (maximumFollowedRedirects < 0) {
             logger.warn("Attempted to set a negative number of maximum allowed redirects ({}), limiting to 0.", maximumFollowedRedirects);
             maximumFollowedRedirects = 0;
@@ -109,6 +112,8 @@ public class HttpRetrieval {
         }
         
         this.maximumFollowedRedirects = maximumFollowedRedirects;
+        
+        return this;
     }
     
     /**

@@ -227,8 +227,21 @@ public class HttpRetrievalTest {
         // Act
         httpRetrieval.setTimeout(timeout);
         
-        // Assert
+        // AssertappliesToInternalAttribute
         assertThat(httpRetrieval.timeout, is(timeout));
+    }
+
+    @Test
+    public void testSetTimeout_always_returnsSameInstance() {
+        // Arrange
+        Duration timeout = Duration.ofMillis(54321);
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        HttpRetrieval res = httpRetrieval.setTimeout(timeout);
+        
+        // Assert
+        assertThat(res, is(sameInstance(httpRetrieval)));
     }
 
     @Test
@@ -259,7 +272,7 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    public void testSetUserAgent_notNull_appliesToInternalAttribute() {
+    public void testSetUserAgent_goodString_appliesToInternalAttribute() {
         // Arrange
         String expectedUserAgent = "testSetUserAgent_notNull_appliesToInternalAttribute";
         HttpRetrieval httpRetrieval = new HttpRetrieval();
@@ -325,6 +338,42 @@ public class HttpRetrievalTest {
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("User-agent string is required and cannot be set to empty/white-space string! Using previous/default value.");
         assertThat(loggingEvents, contains(expectedEvent));
+    }
+
+    @Test
+    public void testSetUserAgent_goodString_returnsSameInstance() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        HttpRetrieval res = httpRetrieval.setUserAgent("123");
+        
+        // Assert
+        assertThat(res, is(sameInstance(httpRetrieval)));
+    }
+
+    @Test
+    public void testSetUserAgent_null_returnsSameInstance() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        HttpRetrieval res = httpRetrieval.setUserAgent(null);
+        
+        // Assert
+        assertThat(res, is(sameInstance(httpRetrieval)));
+    }
+
+    @Test
+    public void testSetUserAgent_whitespaceString_returnsSameInstance() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        HttpRetrieval res = httpRetrieval.setUserAgent("  ");
+        
+        // Assert
+        assertThat(res, is(sameInstance(httpRetrieval)));
     }
 
     @Test
@@ -433,6 +482,18 @@ public class HttpRetrievalTest {
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("Allowing a high number of redirects to be followed ({}), this may not make sense and should be reduced for practical reasons.", 11);
         assertThat(loggingEvents, contains(expectedEvent));
+    }
+    
+    @Test
+    public void testSetMaximumFollowedRedirects_always_returnsSameInstance() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        HttpRetrieval res = httpRetrieval.setMaximumFollowedRedirects(1);
+        
+        // Assert
+        assertThat(res, is(sameInstance(httpRetrieval)));
     }
     
     @Test
