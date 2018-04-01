@@ -39,6 +39,50 @@ public class CaseInsensitiveHeadersTest {
     }
     
     @Test
+    public void testAdd_nonNullKeyAndValue_returnsSameInstance() {
+        // Arrange (nothing to do)
+        
+        // Act
+        CaseInsensitiveHeaders res = spyHeaders.add("a", "b");
+        
+        // Assert
+        assertThat(res, is(sameInstance(spyHeaders)));
+    }
+    
+    @Test
+    public void testAdd_nullKey_throwsIllegalArgumentException() {
+        // Arrange
+        thrown.expect(IllegalArgumentException.class);
+        
+        // Act
+        spyHeaders.add(null, "a");
+        
+        // Assert (nothing to do)
+    }
+    
+    @Test
+    public void testAdd_nullValue_throwsIllegalArgumentException() {
+        // Arrange
+        thrown.expect(IllegalArgumentException.class);
+        
+        // Act
+        spyHeaders.add("a", null);
+        
+        // Assert (nothing to do)
+    }
+    
+    @Test
+    public void testAddAll_null_returnsSameInstance() {
+        // Arrange (nothing to do)
+        
+        // Act
+        CaseInsensitiveHeaders res = spyHeaders.addAll(null);
+        
+        // Assert
+        assertThat(res, is(sameInstance(spyHeaders)));
+    }
+    
+    @Test
     public void testAddAll_null_doesNotAdd() {
         // Arrange (nothing to do)
         
@@ -47,6 +91,18 @@ public class CaseInsensitiveHeadersTest {
         
         // Assert
         verify(spyHeaders, never()).add(Mockito.anyString(), Mockito.anyString());
+    }
+    
+    @Test
+    public void testAddAll_emptyArray_returnsSameInstance() {
+        // Arrange
+        Header[] arr = new Header[0];
+        
+        // Act
+        CaseInsensitiveHeaders res = spyHeaders.addAll(arr);
+        
+        // Assert
+        assertThat(res, is(sameInstance(spyHeaders)));
     }
     
     @Test
@@ -59,6 +115,20 @@ public class CaseInsensitiveHeadersTest {
         
         // Assert
         verify(spyHeaders, never()).add(Mockito.anyString(), Mockito.anyString());
+    }
+    
+    @Test
+    public void testAddAll_fullArray_returnsSameInstance() {
+        // Arrange
+        Header[] arr = new Header[]{
+            mockHeader("a", "0123"),
+        };
+        
+        // Act
+        CaseInsensitiveHeaders res = spyHeaders.addAll(arr);
+        
+        // Assert
+        assertThat(res, is(sameInstance(spyHeaders)));
     }
     
     @Test

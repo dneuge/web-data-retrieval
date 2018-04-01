@@ -17,6 +17,9 @@ import org.apache.http.HttpEntity;
  * Headers of same name can appear multiple times.
  * Such values are being returned in order of appearance.
  * </p>
+ * <p>
+ * Null must not be used for header names or values.
+ * </p>
  */
 public class CaseInsensitiveHeaders {
     private final HashMap<String, List<String>> map = new HashMap<>();
@@ -25,26 +28,38 @@ public class CaseInsensitiveHeaders {
      * Adds all {@link Header}s as available from {@link HttpEntity}.
      * Adding headers is not thread-safe and should be avoided after providing
      * the container to outside.
-     * @param headers headers to be indexed
+     * @param headers headers to be indexed; names and values must not be null
+     * @return same instance for method-chaining
      */
-    void addAll(Header[] headers) {
+    CaseInsensitiveHeaders addAll(Header[] headers) {
         if (headers == null) {
-            return;
+            return this;
         }
         
         for (Header header : headers) {
             add(header.getName(), header.getValue());
         }
+        
+        return this;
     }
     
     /**
      * Adds the given value to be indexed by the specified name.
      * Adding headers is not thread-safe and should be avoided after providing
      * the container to outside.
-     * @param name name will be converted to lower case
-     * @param value value to be added
+     * @param name name will be converted to lower case; must not be null
+     * @param value value to be added; must not be null
+     * @return same instance for method-chaining
      */
-    void add(String name, String value) {
+    CaseInsensitiveHeaders add(String name, String value) {
+        if (name == null) {
+            throw new IllegalArgumentException("null is not allowed as header name");
+        }
+        
+        if (value == null) {
+            throw new IllegalArgumentException("null is not allowed as value");
+        }
+        
         name = name.toLowerCase();
         
         List<String> list = map.get(name);
@@ -54,6 +69,8 @@ public class CaseInsensitiveHeaders {
         }
         
         list.add(value);
+        
+        return this;
     }
     
     /**
