@@ -1,7 +1,6 @@
 package de.energiequant.common.webdataretrieval;
 
 import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +19,7 @@ public class DefaultHttpRetrievalDecoders {
      * @param characterSet character set to apply for decoding
      * @return response body decoded with specified character set
      */
-    Function<HttpRetrieval, String> bodyAsStringWithFixedCharacterSet(Charset characterSet) {
+    public Function<HttpRetrieval, String> bodyAsStringWithFixedCharacterSet(Charset characterSet) {
         if (characterSet == null) {
             throw new IllegalArgumentException("character set must not be null");
         }
@@ -42,7 +41,7 @@ public class DefaultHttpRetrievalDecoders {
      * @param fallbackCharacterSet fallback character set to apply if retrieving character set from header fails
      * @return response body decoded with header-specified or fallback character set
      */
-    Function<HttpRetrieval, String> bodyAsStringWithHeaderCharacterSet(Charset fallbackCharacterSet) {
+    public Function<HttpRetrieval, String> bodyAsStringWithHeaderCharacterSet(Charset fallbackCharacterSet) {
         if (fallbackCharacterSet == null) {
             throw new IllegalArgumentException("character set must not be null");
         }
