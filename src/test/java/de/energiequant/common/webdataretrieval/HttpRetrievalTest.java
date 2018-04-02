@@ -1,4 +1,4 @@
-package de.energiequant.vatplanner.commons.web;
+package de.energiequant.common.webdataretrieval;
 
 import com.google.common.collect.ImmutableList;
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -30,7 +30,6 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
-import org.mockito.Answers;
 import org.mockito.Mockito;
 import static org.mockito.Mockito.*;
 import org.mockito.invocation.Invocation;

@@ -1,4 +1,4 @@
-package de.energiequant.vatplanner.commons.web;
+package de.energiequant.common.webdataretrieval;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;

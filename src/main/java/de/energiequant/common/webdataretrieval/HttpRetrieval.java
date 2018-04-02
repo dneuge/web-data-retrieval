@@ -1,4 +1,4 @@
-package de.energiequant.vatplanner.commons.web;
+package de.energiequant.common.webdataretrieval;
 
 import java.io.IOException;
 import java.io.InputStream;

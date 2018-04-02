@@ -1,4 +1,4 @@
-package de.energiequant.vatplanner.commons.web;
+package de.energiequant.common.webdataretrieval;
 
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;

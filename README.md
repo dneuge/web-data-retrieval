@@ -1,10 +1,8 @@
-# Commons Web
+# Web Data Retrieval Helper
 
 [![License: MIT with dependencies](https://img.shields.io/badge/license-MIT%20w%2F%20deps-blue.svg)](LICENSE.md)
 
-Just another small helper library for common web-based data retrieval.
-
-Please note: Despite the name, this project is *not* affiliated with Apache Commons.
+Just another small helper library for common web-based data retrieval tasks.
 
 ## Current API State
 

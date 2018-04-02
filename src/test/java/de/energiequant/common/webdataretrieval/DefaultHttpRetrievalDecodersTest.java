@@ -1,6 +1,5 @@
-package de.energiequant.vatplanner.commons.web;
+package de.energiequant.common.webdataretrieval;
 
-import com.google.common.hash.Funnels;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
