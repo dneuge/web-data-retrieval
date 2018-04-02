@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -266,6 +267,32 @@ public class HttpRetrieval {
             logger.warn("Failed to copy bytes from HTTP response.", ex);
             return null;
         }
+    }
+    
+    /**
+     * Returns all response headers.
+     * @return all response headers
+     */
+    public CaseInsensitiveHeaders getResponseHeaders() {
+        if (httpResponse == null) {
+            return null;
+        }
+        
+        Header[] arr = httpResponse.getAllHeaders();
+        
+        CaseInsensitiveHeaders container = createCaseInsensitiveHeaders();
+        container.addAll(arr);
+        
+        return container;
+    }
+    
+    /**
+     * Creates a new instance of {@link CaseInsensitiveHeaders}.
+     * Required for unit-testing.
+     * @return new instance of {@link CaseInsensitiveHeaders}
+     */
+    CaseInsensitiveHeaders createCaseInsensitiveHeaders() {
+        return new CaseInsensitiveHeaders();
     }
     
     /**

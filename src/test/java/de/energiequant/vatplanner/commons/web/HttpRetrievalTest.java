@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -29,6 +30,8 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.*;
 import org.mockito.invocation.Invocation;
 import uk.org.lidalia.slf4jext.Level;
@@ -1154,5 +1157,37 @@ public class HttpRetrievalTest {
         
         // Assert
         assertThat(res, is(false));
+    }
+
+    @Test
+    public void testGetResponseHeaders_nullResponse_returnsNull() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        httpRetrieval.httpResponse = null;
+        
+        // Act
+        CaseInsensitiveHeaders result = httpRetrieval.getResponseHeaders();
+        
+        // Assert
+        assertThat(result, is(nullValue()));
+    }
+
+    @Test
+    public void testGetResponseHeaders_withResponse_returnsWithOnlyAllResponseHeadersAdded() {
+        // Arrange
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        spyRetrieval.httpResponse = mock(HttpResponse.class);
+        
+        Header[] headersArr = new Header[0];
+        when(spyRetrieval.httpResponse.getAllHeaders()).thenReturn(headersArr);
+        
+        doReturn(mock(CaseInsensitiveHeaders.class)).when(spyRetrieval).createCaseInsensitiveHeaders();
+        
+        // Act
+        CaseInsensitiveHeaders mockHeaders = spyRetrieval.getResponseHeaders();
+        
+        // Assert
+        verify(mockHeaders).addAll(Mockito.same(headersArr));
+        verifyNoMoreInteractions(mockHeaders);
     }
 }
