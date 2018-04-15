@@ -1,6 +1,7 @@
 package de.energiequant.common.webdataretrieval;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,6 +14,32 @@ public class DefaultHttpRetrievalDecoders {
     
     private static final Pattern PATTERN_HTTP_HEADER_CONTENT_TYPE = Pattern.compile(".*;\\s*charset=(\\S+).*");
     private static final int PATTERN_HTTP_HEADER_CONTENT_TYPE_CHARSET = 1;
+    
+    /**
+     * Builds a decoder which provides meta data about retrieval by wrapping the
+     * result of another decoder into a {@link RetrievedData} container.
+     * @param <T> type returned by wrapped decoder
+     * @param decoder decoder to be wrapped, must not be null
+     * @return results of given decoder inside a container holding meta data about retrieval
+     */
+    public <T> Function<HttpRetrieval, RetrievedData<T>> withMetaData(Function<HttpRetrieval, T> decoder) {
+        if (decoder == null) {
+            throw new IllegalArgumentException("decoder must not be null");
+        }
+        
+        return new Function<HttpRetrieval, RetrievedData<T>>() {
+            @Override
+            public RetrievedData<T> apply(HttpRetrieval retrieval) {
+                Instant time = getInstantNow();
+                String lastRequestedLocation = retrieval.getLastRequestedLocation();
+                String lastRetrievedLocation = retrieval.getLastRetrievedLocation();
+                
+                T data = decoder.apply(retrieval);
+                
+                return new RetrievedData<>(time, lastRequestedLocation, lastRetrievedLocation, data);
+            }
+        };
+    }
     
     /**
      * Builds a decoder which always decodes the response body with a fixed character set.
@@ -94,5 +121,14 @@ public class DefaultHttpRetrievalDecoders {
         }
         
         return null;
+    }
+    
+    /**
+     * Returns current time via static method call {@link Instant#now()}.
+     * Required for unit-testing.
+     * @return current time via {@link Instant#now()}
+     */
+    Instant getInstantNow() {
+        return Instant.now();
     }
 }
