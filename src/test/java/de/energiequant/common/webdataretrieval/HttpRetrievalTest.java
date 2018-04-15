@@ -1196,12 +1196,12 @@ public class HttpRetrievalTest {
     }
     
     @Test
-    public void testGetLastRequestedUrl_beforeRequest_returnsNull() {
+    public void testGetLastRequestedLocation_beforeRequest_returnsNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         
         // Act
-        String result = httpRetrieval.getLastRequestedUrl();
+        String result = httpRetrieval.getLastRequestedLocation();
         
         // Assert
         assertThat(result, is(nullValue()));
@@ -1209,53 +1209,53 @@ public class HttpRetrievalTest {
     
     @Test
     @DataProvider({"http://abc.local/test.html", "https://somewhere.else.local/?id=123", ":thisisgarbage:!!"})
-    public void testGetLastRequestedUrl_afterRequest_returnsSameUrl(String url) {
+    public void testGetLastRequestedLocation_afterRequest_returnsSameUrl(String url) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.requestByGet(url);
         
         // Act
-        String result = httpRetrieval.getLastRequestedUrl();
+        String result = httpRetrieval.getLastRequestedLocation();
         
         // Assert
         assertThat(result, is(equalTo(url)));
     }
     
     @Test
-    public void testGetLastRequestedUrl_afterSecondRequest_returnsSecondUrl() {
+    public void testGetLastRequestedLocation_afterSecondRequest_returnsSecondUrl() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.requestByGet("http://not.what.i.want/");
         httpRetrieval.requestByGet("https://thats.what.i.want/");
         
         // Act
-        String result = httpRetrieval.getLastRequestedUrl();
+        String result = httpRetrieval.getLastRequestedLocation();
         
         // Assert
         assertThat(result, is(equalTo("https://thats.what.i.want/")));
     }
     
     @Test
-    public void testGetLastRequestedUrl_afterSecondRequestWithNullUrl_returnsNull() {
+    public void testGetLastRequestedLocation_afterSecondRequestWithNullUrl_returnsNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.requestByGet("http://not.what.i.want/");
         httpRetrieval.requestByGet(null);
         
         // Act
-        String result = httpRetrieval.getLastRequestedUrl();
+        String result = httpRetrieval.getLastRequestedLocation();
         
         // Assert
         assertThat(result, is(nullValue()));
     }
     
     @Test
-    public void testGetLastRetrievedUrl_beforeRequest_returnsNull() {
+    public void testGetLastRetrievedLocation_beforeRequest_returnsNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         
         // Act
-        String result = httpRetrieval.getLastRetrievedUrl();
+        String result = httpRetrieval.getLastRetrievedLocation();
         
         // Assert
         assertThat(result, is(nullValue()));
@@ -1263,7 +1263,7 @@ public class HttpRetrievalTest {
     
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
-    public void testGetLastRetrievedUrl_afterRequestManyRedirects_returnsLastRedirectUrlFromContext(String expectedUrl) throws Exception {
+    public void testGetLastRetrievedLocation_afterRequestManyRedirects_returnsLastRedirectLocationFromContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
         when(mockContext.getRedirectLocations()).thenReturn(Arrays.asList(
@@ -1284,7 +1284,7 @@ public class HttpRetrievalTest {
         spyRetrieval.requestByGet("http://this-was-originally-requested/");
         
         // Act
-        String result = spyRetrieval.getLastRetrievedUrl();
+        String result = spyRetrieval.getLastRetrievedLocation();
         
         // Assert
         assertThat(result, is(equalTo(expectedUrl)));
@@ -1292,7 +1292,7 @@ public class HttpRetrievalTest {
     
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
-    public void testGetLastRetrievedUrl_afterRequestNoRedirects_returnsRequestedUrl(String url) throws Exception {
+    public void testGetLastRetrievedLocation_afterRequestNoRedirects_returnsRequestedUrl(String url) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
         when(mockContext.getRedirectLocations()).thenReturn(new ArrayList<>());
@@ -1309,7 +1309,7 @@ public class HttpRetrievalTest {
         spyRetrieval.requestByGet(url);
         
         // Act
-        String result = spyRetrieval.getLastRetrievedUrl();
+        String result = spyRetrieval.getLastRetrievedLocation();
         
         // Assert
         assertThat(result, is(equalTo(url)));
@@ -1317,7 +1317,7 @@ public class HttpRetrievalTest {
     
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
-    public void testGetLastRetrievedUrl_afterSecondRequestWithNewContext_returnsUrlFromNewContext(String expectedUrl) throws Exception {
+    public void testGetLastRetrievedLocation_afterSecondRequestWithNewContext_returnsLocationFromNewContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
@@ -1338,14 +1338,14 @@ public class HttpRetrievalTest {
         spyRetrieval.requestByGet("https://some-url.local/");
         
         // Act
-        String result = spyRetrieval.getLastRetrievedUrl();
+        String result = spyRetrieval.getLastRetrievedLocation();
         
         // Assert
         assertThat(result, is(equalTo(expectedUrl)));
     }
     
     @Test
-    public void testGetLastRetrievedUrl_afterSecondRequestFailed_returnsNull() throws Exception {
+    public void testGetLastRetrievedLocation_afterSecondRequestFailed_returnsNull() throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         when(mockFirstContext.getRedirectLocations()).thenReturn(Arrays.asList(new URI("http://unexpected.url.local/")));
@@ -1365,14 +1365,14 @@ public class HttpRetrievalTest {
         spyRetrieval.requestByGet("https://some-url.local/");
         
         // Act
-        String result = spyRetrieval.getLastRetrievedUrl();
+        String result = spyRetrieval.getLastRetrievedLocation();
         
         // Assert
         assertThat(result, is(nullValue()));
     }
     
     @Test
-    public void testRequestByGet_secondRequest_callsExecuteWithSecondContext() throws Exception {
+    public void testRequestByGet_secondRequest_executesWithSecondContext() throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);

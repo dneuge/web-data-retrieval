@@ -37,7 +37,7 @@ public class HttpRetrieval {
     protected Map<String, InputStreamFactory> unmodifiableContentDecoderMap = null;
     protected HttpResponse httpResponse = null;
     private HttpClientContext httpClientContext = null;
-    private String lastRequestedUrl = null;
+    private String lastRequestedLocation = null;
     
     private static final Pattern PATTERN_URL_PROTOCOL = Pattern.compile("^([a-z]+)://.*", Pattern.CASE_INSENSITIVE);
     private static final Set<String> supportedUrlProtocols = new TreeSet<String>(Arrays.asList(new String[]{
@@ -230,11 +230,11 @@ public class HttpRetrieval {
         
         if (url == null) {
             logger.warn("Attempted to perform a GET request with null as URL.");
-            lastRequestedUrl = null;
+            lastRequestedLocation = null;
             return false;
         }
         
-        lastRequestedUrl = url.toString();
+        lastRequestedLocation = url.toString();
         
         boolean isSupportedProtocol = checkSupportedUrlProtocol(url);
         if (!isSupportedProtocol) {
@@ -268,23 +268,25 @@ public class HttpRetrieval {
     }
     
     /**
-     * Returns the last URL which was requested.
+     * Returns the last location which was requested.
      * Any requested URL will be returned, including erroneous ones.
-     * Redirects do not change this URL, see {@link #getLastRetrievedUrl()} if
+     * Redirects do not change this URL, see {@link #getLastRetrievedLocation()} if
      * you would like to know the final source URL the data was retrieved from.
-     * @return last requested URL (not response location)
+     * @return last requested location (not response location)
      */
-    public String getLastRequestedUrl() {
-        return lastRequestedUrl;
+    public String getLastRequestedLocation() {
+        return lastRequestedLocation;
     }
     
     /**
-     * Returns the last URL which was retrieved.
+     * Returns the last location which was retrieved.
      * This specifies the actual location of retrieved information after
      * following all redirects, if any.
-     * @return last retrieved URL after following all redirects; null if retrieval failed or no URL has been requested yet
+     * See {@link #getLastRequestedLocation()} if you need the originally
+     * requested location.
+     * @return last retrieved location (usually a URL) after following all redirects; null if retrieval failed or no URL has been requested yet
      */
-    public String getLastRetrievedUrl() {
+    public String getLastRetrievedLocation() {
         if (httpResponse == null || httpClientContext == null) {
             return null;
         }
@@ -292,7 +294,7 @@ public class HttpRetrieval {
         List<URI> redirectLocations = httpClientContext.getRedirectLocations();
         
         if (redirectLocations.isEmpty()) {
-            return getLastRequestedUrl();
+            return getLastRequestedLocation();
         } else {
             URI lastRedirectLocation = redirectLocations.get(redirectLocations.size() - 1);
             
