@@ -2,10 +2,12 @@ package de.energiequant.common.webdataretrieval;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -20,6 +22,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.InputStreamFactory;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
@@ -33,6 +36,8 @@ public class HttpRetrieval {
     protected int maximumFollowedRedirects = 5;
     protected Map<String, InputStreamFactory> unmodifiableContentDecoderMap = null;
     protected HttpResponse httpResponse = null;
+    private HttpClientContext httpClientContext = null;
+    private String lastRequestedUrl = null;
     
     private static final Pattern PATTERN_URL_PROTOCOL = Pattern.compile("^([a-z]+)://.*", Pattern.CASE_INSENSITIVE);
     private static final Set<String> supportedUrlProtocols = new TreeSet<String>(Arrays.asList(new String[]{
@@ -225,8 +230,11 @@ public class HttpRetrieval {
         
         if (url == null) {
             logger.warn("Attempted to perform a GET request with null as URL.");
+            lastRequestedUrl = null;
             return false;
         }
+        
+        lastRequestedUrl = url.toString();
         
         boolean isSupportedProtocol = checkSupportedUrlProtocol(url);
         if (!isSupportedProtocol) {
@@ -240,13 +248,61 @@ public class HttpRetrieval {
         HttpUriRequest request = buildHttpGet(url);
         
         try {
-            httpResponse = client.execute(request);
+            httpClientContext = createHttpClientContext();
+            httpResponse = client.execute(request, httpClientContext);
         } catch (IOException ex) {
             logger.warn("GET request to \"{}\" failed with an exception.", url, ex);
             return false;
         }
         
         return true;
+    }
+
+    /**
+     * Creates a new instance of {@link HttpClientContext}.
+     * Required for unit testing.
+     * @return new instance of {@link HttpClientContext}
+     */
+    HttpClientContext createHttpClientContext() {
+        return HttpClientContext.create();
+    }
+    
+    /**
+     * Returns the last URL which was requested.
+     * Any requested URL will be returned, including erroneous ones.
+     * Redirects do not change this URL, see {@link #getLastRetrievedUrl()} if
+     * you would like to know the final source URL the data was retrieved from.
+     * @return last requested URL (not response location)
+     */
+    public String getLastRequestedUrl() {
+        return lastRequestedUrl;
+    }
+    
+    /**
+     * Returns the last URL which was retrieved.
+     * This specifies the actual location of retrieved information after
+     * following all redirects, if any.
+     * @return last retrieved URL after following all redirects; null if retrieval failed or no URL has been requested yet
+     */
+    public String getLastRetrievedUrl() {
+        if (httpResponse == null || httpClientContext == null) {
+            return null;
+        }
+        
+        List<URI> redirectLocations = httpClientContext.getRedirectLocations();
+        
+        if (redirectLocations.isEmpty()) {
+            return getLastRequestedUrl();
+        } else {
+            URI lastRedirectLocation = redirectLocations.get(redirectLocations.size() - 1);
+            
+            // NOTE: I assume we always have a valid (not malformed) URL as
+            //       result because we retrieved data from there via HTTP(S).
+            //       However, calling URI#toURL() may still throw an Exception
+            //       by signature, so we just tell the URI to encode its content
+            //       which _should_ have the same result in this case.
+            return lastRedirectLocation.toASCIIString();
+        }
     }
     
     /**

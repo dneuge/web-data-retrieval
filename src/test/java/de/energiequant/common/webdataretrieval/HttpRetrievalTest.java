@@ -8,7 +8,10 @@ import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +25,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.InputStreamFactory;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.HttpClientBuilder;
 import static org.hamcrest.Matchers.*;
 import org.hamcrest.junit.ExpectedException;
@@ -744,7 +749,7 @@ public class HttpRetrievalTest {
         spy.requestByGet(url);
         
         // Assert
-        verify(mockClient).execute(mockGet);
+        verify(mockClient).execute(same(mockGet), Mockito.any(HttpClientContext.class));
     }
 
     @Test
@@ -795,7 +800,7 @@ public class HttpRetrievalTest {
         HttpResponse mockResponse = mock(HttpResponse.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        when(mockClient.execute(mockGet)).thenReturn(mockResponse);
+        when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenReturn(mockResponse);
         
         // Act
         spy.requestByGet(url);
@@ -867,7 +872,7 @@ public class HttpRetrievalTest {
         HttpClient mockClient = mock(HttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        when(mockClient.execute(mockGet)).thenThrow(IOException.class);
+        when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenThrow(IOException.class);
         
         // Act
         boolean res = spy.requestByGet(url);
@@ -886,7 +891,7 @@ public class HttpRetrievalTest {
         HttpClient mockClient = mock(HttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        when(mockClient.execute(mockGet)).thenThrow(expectedThrowable);
+        when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenThrow(expectedThrowable);
         
         // Act
         spy.requestByGet(url);
@@ -1188,5 +1193,204 @@ public class HttpRetrievalTest {
         // Assert
         verify(mockHeaders).addAll(Mockito.same(headersArr));
         verifyNoMoreInteractions(mockHeaders);
+    }
+    
+    @Test
+    public void testGetLastRequestedUrl_beforeRequest_returnsNull() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        String result = httpRetrieval.getLastRequestedUrl();
+        
+        // Assert
+        assertThat(result, is(nullValue()));
+    }
+    
+    @Test
+    @DataProvider({"http://abc.local/test.html", "https://somewhere.else.local/?id=123", ":thisisgarbage:!!"})
+    public void testGetLastRequestedUrl_afterRequest_returnsSameUrl(String url) {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        httpRetrieval.requestByGet(url);
+        
+        // Act
+        String result = httpRetrieval.getLastRequestedUrl();
+        
+        // Assert
+        assertThat(result, is(equalTo(url)));
+    }
+    
+    @Test
+    public void testGetLastRequestedUrl_afterSecondRequest_returnsSecondUrl() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        httpRetrieval.requestByGet("http://not.what.i.want/");
+        httpRetrieval.requestByGet("https://thats.what.i.want/");
+        
+        // Act
+        String result = httpRetrieval.getLastRequestedUrl();
+        
+        // Assert
+        assertThat(result, is(equalTo("https://thats.what.i.want/")));
+    }
+    
+    @Test
+    public void testGetLastRequestedUrl_afterSecondRequestWithNullUrl_returnsNull() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        httpRetrieval.requestByGet("http://not.what.i.want/");
+        httpRetrieval.requestByGet(null);
+        
+        // Act
+        String result = httpRetrieval.getLastRequestedUrl();
+        
+        // Assert
+        assertThat(result, is(nullValue()));
+    }
+    
+    @Test
+    public void testGetLastRetrievedUrl_beforeRequest_returnsNull() {
+        // Arrange
+        HttpRetrieval httpRetrieval = new HttpRetrieval();
+        
+        // Act
+        String result = httpRetrieval.getLastRetrievedUrl();
+        
+        // Assert
+        assertThat(result, is(nullValue()));
+    }
+    
+    @Test
+    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    public void testGetLastRetrievedUrl_afterRequestManyRedirects_returnsLastRedirectUrlFromContext(String expectedUrl) throws Exception {
+        // Arrange
+        HttpClientContext mockContext = mock(HttpClientContext.class);
+        when(mockContext.getRedirectLocations()).thenReturn(Arrays.asList(
+                new URI("http://first-redirect/abc.html"), 
+                new URI("http://another.com/"), 
+                new URI(expectedUrl)
+        ));
+        
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
+        
+        HttpClient mockClient = mock(HttpClient.class);
+        doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        
+        spyRetrieval.requestByGet("http://this-was-originally-requested/");
+        
+        // Act
+        String result = spyRetrieval.getLastRetrievedUrl();
+        
+        // Assert
+        assertThat(result, is(equalTo(expectedUrl)));
+    }
+    
+    @Test
+    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    public void testGetLastRetrievedUrl_afterRequestNoRedirects_returnsRequestedUrl(String url) throws Exception {
+        // Arrange
+        HttpClientContext mockContext = mock(HttpClientContext.class);
+        when(mockContext.getRedirectLocations()).thenReturn(new ArrayList<>());
+        
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
+
+        HttpClient mockClient = mock(HttpClient.class);
+        doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        
+        spyRetrieval.requestByGet(url);
+        
+        // Act
+        String result = spyRetrieval.getLastRetrievedUrl();
+        
+        // Assert
+        assertThat(result, is(equalTo(url)));
+    }
+    
+    @Test
+    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    public void testGetLastRetrievedUrl_afterSecondRequestWithNewContext_returnsUrlFromNewContext(String expectedUrl) throws Exception {
+        // Arrange
+        HttpClientContext mockFirstContext = mock(HttpClientContext.class);
+        HttpClientContext mockSecondContext = mock(HttpClientContext.class);
+        when(mockSecondContext.getRedirectLocations()).thenReturn(Arrays.asList(
+                new URI(expectedUrl)
+        ));
+        
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        doReturn(mockFirstContext, mockSecondContext).when(spyRetrieval).createHttpClientContext();
+
+        HttpClient mockClient = mock(HttpClient.class);
+        doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+        
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        
+        spyRetrieval.requestByGet("https://some-url.local/");
+        spyRetrieval.requestByGet("https://some-url.local/");
+        
+        // Act
+        String result = spyRetrieval.getLastRetrievedUrl();
+        
+        // Assert
+        assertThat(result, is(equalTo(expectedUrl)));
+    }
+    
+    @Test
+    public void testGetLastRetrievedUrl_afterSecondRequestFailed_returnsNull() throws Exception {
+        // Arrange
+        HttpClientContext mockFirstContext = mock(HttpClientContext.class);
+        when(mockFirstContext.getRedirectLocations()).thenReturn(Arrays.asList(new URI("http://unexpected.url.local/")));
+        
+        HttpClientContext mockSecondContext = mock(HttpClientContext.class);
+        
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        doReturn(mockFirstContext, mockSecondContext).when(spyRetrieval).createHttpClientContext();
+
+        HttpClient mockClient = mock(HttpClient.class);
+        doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+        
+        spyRetrieval.requestByGet("https://some-url.local/");
+        
+        doThrow(new IOException()).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        
+        spyRetrieval.requestByGet("https://some-url.local/");
+        
+        // Act
+        String result = spyRetrieval.getLastRetrievedUrl();
+        
+        // Assert
+        assertThat(result, is(nullValue()));
+    }
+    
+    @Test
+    public void testRequestByGet_secondRequest_callsExecuteWithSecondContext() throws Exception {
+        // Arrange
+        HttpClientContext mockFirstContext = mock(HttpClientContext.class);
+        HttpClientContext mockSecondContext = mock(HttpClientContext.class);
+        
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        doReturn(mockFirstContext, mockSecondContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
+
+        HttpClient mockClient = mock(HttpClient.class);
+        doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+        
+        spyRetrieval.requestByGet("https://some-url.local/");
+        
+        reset(mockClient);
+        
+        // Act
+        spyRetrieval.requestByGet("https://some-url.local/");
+        
+        // Assert
+        verify(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.same(mockSecondContext));
     }
 }
