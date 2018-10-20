@@ -30,11 +30,12 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.HttpClientBuilder;
 import static org.hamcrest.Matchers.*;
 import org.hamcrest.junit.ExpectedException;
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
+import static org.mockito.ArgumentMatchers.same;
 import org.mockito.Mockito;
 import static org.mockito.Mockito.*;
 import org.mockito.invocation.Invocation;
@@ -45,19 +46,20 @@ import uk.org.lidalia.slf4jtest.TestLoggerFactory;
 
 @RunWith(DataProviderRunner.class)
 public class HttpRetrievalTest {
+
     TestLogger testLogger = TestLoggerFactory.getTestLogger(HttpRetrieval.class);
-    
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    
+
     @Before
     public void setUp() {
         testLogger.clearAll();
     }
-    
+
     @DataProvider
     public static String[] dataProviderUrlsWithSupportedProtocols() {
-        return new String[] {
+        return new String[]{
             "http://a.b/",
             "http://a.b.de/a.html",
             "HTTP://a.b.de/a.html",
@@ -65,10 +67,10 @@ public class HttpRetrievalTest {
             "https://a.b.de/a.html"
         };
     }
-    
+
     @DataProvider
     public static String[] dataProviderUrlsWithoutSupportedProtocols() {
-        return new String[] {
+        return new String[]{
             null,
             "",
             "   ",
@@ -84,10 +86,10 @@ public class HttpRetrievalTest {
             "https:www.abc.de/"
         };
     }
-    
+
     @DataProvider
     public static Object[] dataProviderCompleteContentResponseStatusCodes() {
-        return new Integer[] {
+        return new Integer[]{
             200,
             201,
             202,
@@ -96,10 +98,10 @@ public class HttpRetrievalTest {
             205
         };
     }
-    
+
     @DataProvider
     public static Object[] dataProviderIncompleteContentResponseStatus() {
-        return new Integer[] {
+        return new Integer[]{
             0,
             301,
             302,
@@ -115,26 +117,27 @@ public class HttpRetrievalTest {
             200123
         };
     }
-    
+
     /**
      * Extracts the default request configuration from a collection of
      * invocations.
+     *
      * @param invocations invocations to extract parameter from
      * @return default request configuration as passed by invocation parameter
      */
     private RequestConfig getRequestConfigFromInvocations(final Collection<Invocation> invocations) {
         List<RequestConfig> setRequestConfigs = invocations.stream()
-            .filter((Invocation t) -> t.getMethod().getName().equals("setDefaultRequestConfig"))
-            .map((Invocation t) -> (RequestConfig) t.getArgument(0))
-            .collect(Collectors.toList());
-        
+                .filter((Invocation t) -> t.getMethod().getName().equals("setDefaultRequestConfig"))
+                .map((Invocation t) -> (RequestConfig) t.getArgument(0))
+                .collect(Collectors.toList());
+
         assertThat(setRequestConfigs, hasSize(1));
-        
+
         RequestConfig requestConfig = setRequestConfigs.iterator().next();
-        
+
         return requestConfig;
     }
-    
+
     @Test
     public void testCopyConfigurationTo_setTimeout_invokesSetterWithSameArgument() {
         // Arrange
@@ -142,10 +145,10 @@ public class HttpRetrievalTest {
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         HttpRetrieval mock = mock(HttpRetrieval.class);
         httpRetrieval.setTimeout(timeout);
-        
+
         // Act
         httpRetrieval.copyConfigurationTo(mock);
-        
+
         // Assert
         verify(mock).setTimeout(timeout);
     }
@@ -157,10 +160,10 @@ public class HttpRetrievalTest {
         HttpRetrieval sourceSpy = spy(HttpRetrieval.class);
         when(sourceSpy.getTimeout()).thenReturn(timeout);
         HttpRetrieval targetMock = mock(HttpRetrieval.class);
-        
+
         // Act
         sourceSpy.copyConfigurationTo(targetMock);
-        
+
         // Assert
         verify(sourceSpy).getTimeout();
     }
@@ -172,10 +175,10 @@ public class HttpRetrievalTest {
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setUserAgent(userAgent);
         HttpRetrieval mock = mock(HttpRetrieval.class);
-        
+
         // Act
         httpRetrieval.copyConfigurationTo(mock);
-        
+
         // Assert
         verify(mock).setUserAgent(userAgent);
     }
@@ -187,10 +190,10 @@ public class HttpRetrievalTest {
         HttpRetrieval sourceSpy = spy(HttpRetrieval.class);
         when(sourceSpy.getUserAgent()).thenReturn(userAgent);
         HttpRetrieval targetMock = mock(HttpRetrieval.class);
-        
+
         // Act
         sourceSpy.copyConfigurationTo(targetMock);
-        
+
         // Assert
         verify(sourceSpy).getUserAgent();
     }
@@ -202,10 +205,10 @@ public class HttpRetrievalTest {
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setMaximumFollowedRedirects(numRedirects);
         HttpRetrieval mock = mock(HttpRetrieval.class);
-        
+
         // Act
         httpRetrieval.copyConfigurationTo(mock);
-        
+
         // Assert
         verify(mock).setMaximumFollowedRedirects(numRedirects);
     }
@@ -217,10 +220,10 @@ public class HttpRetrievalTest {
         HttpRetrieval sourceSpy = spy(HttpRetrieval.class);
         when(sourceSpy.getMaximumFollowedRedirects()).thenReturn(numRedirects);
         HttpRetrieval targetMock = mock(HttpRetrieval.class);
-        
+
         // Act
         sourceSpy.copyConfigurationTo(targetMock);
-        
+
         // Assert
         verify(sourceSpy).getMaximumFollowedRedirects();
     }
@@ -230,10 +233,10 @@ public class HttpRetrievalTest {
         // Arrange
         Duration timeout = Duration.ofMillis(54321);
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setTimeout(timeout);
-        
+
         // AssertappliesToInternalAttribute
         assertThat(httpRetrieval.timeout, is(timeout));
     }
@@ -243,10 +246,10 @@ public class HttpRetrievalTest {
         // Arrange
         Duration timeout = Duration.ofMillis(54321);
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         HttpRetrieval res = httpRetrieval.setTimeout(timeout);
-        
+
         // Assert
         assertThat(res, is(sameInstance(httpRetrieval)));
     }
@@ -257,10 +260,10 @@ public class HttpRetrievalTest {
         Duration expectedTimeout = Duration.ofMillis(654654);
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setTimeout(expectedTimeout);
-        
+
         // Act
         Duration actualTimeout = httpRetrieval.getTimeout();
-        
+
         // Assert
         assertThat(actualTimeout, is(expectedTimeout));
     }
@@ -270,10 +273,10 @@ public class HttpRetrievalTest {
         // Arrange
         Duration expectedTimeout = Duration.ofSeconds(30);
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         Duration actualTimeout = httpRetrieval.getTimeout();
-        
+
         // Assert
         assertThat(actualTimeout, is(expectedTimeout));
     }
@@ -283,10 +286,10 @@ public class HttpRetrievalTest {
         // Arrange
         String expectedUserAgent = "testSetUserAgent_notNull_appliesToInternalAttribute";
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setUserAgent(expectedUserAgent);
-        
+
         // Assert
         assertThat(httpRetrieval.userAgent, is(expectedUserAgent));
     }
@@ -297,10 +300,10 @@ public class HttpRetrievalTest {
         String originalUserAgent = "not null";
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setUserAgent(originalUserAgent);
-        
+
         // Act
         httpRetrieval.setUserAgent(null);
-        
+
         // Assert
         assertThat(httpRetrieval.userAgent, is(originalUserAgent));
     }
@@ -309,10 +312,10 @@ public class HttpRetrievalTest {
     public void testSetUserAgent_null_logsWarning() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setUserAgent(null);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("User-agent string is required and cannot be set to null! Using previous/default value.");
@@ -325,10 +328,10 @@ public class HttpRetrievalTest {
         String originalUserAgent = "not white-space";
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setUserAgent(originalUserAgent);
-        
+
         // Act
         httpRetrieval.setUserAgent("      ");
-        
+
         // Assert
         assertThat(httpRetrieval.userAgent, is(originalUserAgent));
     }
@@ -337,10 +340,10 @@ public class HttpRetrievalTest {
     public void testSetUserAgent_whitespaceString_logsWarning() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setUserAgent("      ");
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("User-agent string is required and cannot be set to empty/white-space string! Using previous/default value.");
@@ -351,10 +354,10 @@ public class HttpRetrievalTest {
     public void testSetUserAgent_goodString_returnsSameInstance() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         HttpRetrieval res = httpRetrieval.setUserAgent("123");
-        
+
         // Assert
         assertThat(res, is(sameInstance(httpRetrieval)));
     }
@@ -363,10 +366,10 @@ public class HttpRetrievalTest {
     public void testSetUserAgent_null_returnsSameInstance() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         HttpRetrieval res = httpRetrieval.setUserAgent(null);
-        
+
         // Assert
         assertThat(res, is(sameInstance(httpRetrieval)));
     }
@@ -375,10 +378,10 @@ public class HttpRetrievalTest {
     public void testSetUserAgent_whitespaceString_returnsSameInstance() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         HttpRetrieval res = httpRetrieval.setUserAgent("  ");
-        
+
         // Assert
         assertThat(res, is(sameInstance(httpRetrieval)));
     }
@@ -389,142 +392,142 @@ public class HttpRetrievalTest {
         String expectedUserAgent = "testGetUserAgent_anyValue_returnsSetUserAgent";
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setUserAgent(expectedUserAgent);
-        
+
         // Act
         String actualUserAgent = httpRetrieval.getUserAgent();
-        
+
         // Assert
         assertThat(actualUserAgent, is(expectedUserAgent));
     }
-    
+
     @Test
     public void testGetUserAgent_initially_returnsDefaultUserAgent() {
         // Arrange
         String expectedUserAgent = "HttpRetrieval";
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         String actualUserAgent = httpRetrieval.getUserAgent();
-        
+
         // Assert
         assertThat(actualUserAgent, is(expectedUserAgent));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_positiveNumber_appliesToInternalAttribute() {
         // Arrange
         int expectedNumRedirects = 123;
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setMaximumFollowedRedirects(expectedNumRedirects);
-        
+
         // Assert
         assertThat(httpRetrieval.maximumFollowedRedirects, is(expectedNumRedirects));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_zero_appliesToInternalAttribute() {
         // Arrange
         int expectedNumRedirects = 0;
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setMaximumFollowedRedirects(10);
-        
+
         // Act
         httpRetrieval.setMaximumFollowedRedirects(expectedNumRedirects);
-        
+
         // Assert
         assertThat(httpRetrieval.maximumFollowedRedirects, is(expectedNumRedirects));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_negativeNumber_appliesAsZero() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setMaximumFollowedRedirects(100);
-        
+
         // Act
         httpRetrieval.setMaximumFollowedRedirects(-1);
-        
+
         // Assert
         assertThat(httpRetrieval.maximumFollowedRedirects, is(0));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_negativeNumber_logsWarning() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setMaximumFollowedRedirects(-1);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("Attempted to set a negative number of maximum allowed redirects ({}), limiting to 0.", -1);
         assertThat(loggingEvents, contains(expectedEvent));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_exactly10_doesNotLogWarning() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setMaximumFollowedRedirects(10);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         assertThat(loggingEvents, is(empty()));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_moreThan10_logsWarning() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.setMaximumFollowedRedirects(11);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("Allowing a high number of redirects to be followed ({}), this may not make sense and should be reduced for practical reasons.", 11);
         assertThat(loggingEvents, contains(expectedEvent));
     }
-    
+
     @Test
     public void testSetMaximumFollowedRedirects_always_returnsSameInstance() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         HttpRetrieval res = httpRetrieval.setMaximumFollowedRedirects(1);
-        
+
         // Assert
         assertThat(res, is(sameInstance(httpRetrieval)));
     }
-    
+
     @Test
     public void testGetMaximumFollowedRedirects_anyValue_returnsSetMaximumFollowedRedirects() {
         // Arrange
         int expected = 512;
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.setMaximumFollowedRedirects(expected);
-        
+
         // Act
         int actual = httpRetrieval.getMaximumFollowedRedirects();
-        
+
         // Assert
         assertThat(actual, is(expected));
     }
-    
+
     @Test
     public void testGetMaximumFollowedRedirects_initially_returns5() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         int actual = httpRetrieval.getMaximumFollowedRedirects();
-        
+
         // Assert
         assertThat(actual, is(5));
     }
@@ -533,10 +536,10 @@ public class HttpRetrievalTest {
     public void testBuildHttpClient_initially_returnsNotNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         HttpClient res = httpRetrieval.buildHttpClient();
-        
+
         // Assert
         assertThat(res, is(not(nullValue())));
     }
@@ -549,10 +552,10 @@ public class HttpRetrievalTest {
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
         spy.setTimeout(Duration.ofMillis(expectedTimeout));
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
         int actualTimeout = requestConfig.getConnectTimeout();
@@ -567,10 +570,10 @@ public class HttpRetrievalTest {
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
         spy.setTimeout(Duration.ofMillis(expectedTimeout));
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
         int actualTimeout = requestConfig.getConnectionRequestTimeout();
@@ -585,10 +588,10 @@ public class HttpRetrievalTest {
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
         spy.setTimeout(Duration.ofMillis(expectedTimeout));
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
         int actualTimeout = requestConfig.getSocketTimeout();
@@ -603,32 +606,32 @@ public class HttpRetrievalTest {
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
         spy.setMaximumFollowedRedirects(expectedMaximum);
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
         int actualMaximum = requestConfig.getMaxRedirects();
         assertThat(actualMaximum, is(expectedMaximum));
     }
-    
+
     @Test
     public void testBuildHttpClient_anyConfig_allowsCompression() {
         // Arrange
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
         boolean isEnabled = requestConfig.isContentCompressionEnabled();
         assertThat(isEnabled, is(true));
     }
-    
+
     @Test
     public void testBuildHttpClient_setUserAgent_appliedToBuilder() {
         // Arrange
@@ -637,14 +640,14 @@ public class HttpRetrievalTest {
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
         spy.setUserAgent(expectedUserAgent);
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         verify(spyBuilder).setUserAgent(expectedUserAgent);
     }
-    
+
     @Test
     public void testBuildHttpClient_anyConfig_setsContentDecoderRegistry() {
         // Arrange
@@ -652,50 +655,50 @@ public class HttpRetrievalTest {
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
         Map<String, InputStreamFactory> expectedMap = spy.getContentDecoderMap();
-        
+
         // Act
         spy.buildHttpClient();
-        
+
         // Assert
         // NOTE: this test relies on getContentDecoderMap returning the same
         //       instance for every call
         verify(spyBuilder).setContentDecoderRegistry(expectedMap);
     }
-    
+
     @Test
     public void testGetContentDecoderMap_calledTwice_returnsSameInstance() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         Map<String, InputStreamFactory> firstMap = httpRetrieval.getContentDecoderMap();
-        
+
         // Act
         Map<String, InputStreamFactory> secondMap = httpRetrieval.getContentDecoderMap();
-        
+
         // Assert
         assertThat(secondMap, is(sameInstance(firstMap)));
     }
-    
+
     @Test
     public void testGetContentDecoderMap_initially_isUnmodifiable() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         Map<String, InputStreamFactory> map = httpRetrieval.getContentDecoderMap();
-        
+
         // Assert
         thrown.expect(UnsupportedOperationException.class);
         map.put("test", null);
     }
-    
+
     @Test
     public void testGetContentDecoderMap_initially_containsGzipInputStreamFactory() throws IOException {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         Map<String, InputStreamFactory> map = httpRetrieval.getContentDecoderMap();
-        
+
         // Assert
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(new byte[0]);
         InputStreamFactory factory = map.get("gzip");
@@ -703,16 +706,16 @@ public class HttpRetrievalTest {
         InputStream factoredInputStream = factory.create(byteArrayInputStream);
         assertThat(factoredInputStream, is(instanceOf(GZIPInputStream.class)));
     }
-    
+
     @Test
     public void testRequestByGet_supportedProtocol_invokesBuildHttpClient() {
         // Arrange
         HttpRetrieval spy = spy(HttpRetrieval.class);
         when(spy.buildHttpClient()).thenReturn(mock(HttpClient.class));
-        
+
         // Act
         spy.requestByGet("http://a.local/");
-        
+
         // Assert
         // mocking a method is recorded as an invocation, thus we expect to see
         // n+1 invocations when mocking a method, only one should usually occur
@@ -727,10 +730,10 @@ public class HttpRetrievalTest {
         HttpClient mockClient = mock(HttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mock(HttpGet.class));
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         verify(spy).buildHttpGet(url);
     }
@@ -744,10 +747,10 @@ public class HttpRetrievalTest {
         HttpClient mockClient = mock(HttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         verify(mockClient).execute(same(mockGet), Mockito.any(HttpClientContext.class));
     }
@@ -762,16 +765,16 @@ public class HttpRetrievalTest {
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(mockGet)).thenReturn(mock(HttpResponse.class));
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.debug("requesting \"{}\" by GET method", url);
         assertThat(loggingEvents, contains(expectedEvent));
     }
-    
+
     @Test
     public void testRequestByGet_networkLevelSuccess_returnsTrue() throws IOException {
         // Arrange
@@ -782,10 +785,10 @@ public class HttpRetrievalTest {
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(mockGet)).thenReturn(mock(HttpResponse.class));
-        
+
         // Act
         boolean res = spy.requestByGet(url);
-        
+
         // Assert
         assertThat(res, is(true));
     }
@@ -801,10 +804,10 @@ public class HttpRetrievalTest {
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenReturn(mockResponse);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         assertThat(spy.httpResponse, is(mockResponse));
     }
@@ -819,10 +822,10 @@ public class HttpRetrievalTest {
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         spy.httpResponse = mock(HttpResponse.class);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         assertThat(spy.httpResponse, is(nullValue()));
     }
@@ -836,10 +839,10 @@ public class HttpRetrievalTest {
         HttpClient mockClient = mock(HttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         spy.httpResponse = mock(HttpResponse.class);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         assertThat(spy.httpResponse, is(nullValue()));
     }
@@ -855,10 +858,10 @@ public class HttpRetrievalTest {
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(mockGet)).thenThrow(IOException.class);
         spy.httpResponse = mock(HttpResponse.class);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         assertThat(spy.httpResponse, is(nullValue()));
     }
@@ -873,10 +876,10 @@ public class HttpRetrievalTest {
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenThrow(IOException.class);
-        
+
         // Act
         boolean res = spy.requestByGet(url);
-        
+
         // Assert
         assertThat(res, is(false));
     }
@@ -892,15 +895,15 @@ public class HttpRetrievalTest {
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenThrow(expectedThrowable);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         // it seems we can not easily compare events which wrap a Throwable :(
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents().stream()
-            .filter((LoggingEvent t) -> t.getLevel() == Level.WARN)
-            .collect(Collectors.toList());
+                .filter((LoggingEvent t) -> t.getLevel() == Level.WARN)
+                .collect(Collectors.toList());
         assertThat(loggingEvents.size(), is(1));
         LoggingEvent actualEvent = loggingEvents.iterator().next();
         assertThat(actualEvent.getMessage(), is("GET request to \"{}\" failed with an exception."));
@@ -916,10 +919,10 @@ public class HttpRetrievalTest {
     public void testRequestByGet_nullUrl_returnsFalse() throws IOException {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         boolean res = httpRetrieval.requestByGet(null);
-        
+
         // Assert
         assertThat(res, is(false));
     }
@@ -928,10 +931,10 @@ public class HttpRetrievalTest {
     public void testRequestByGet_nullUrl_logsWarning() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         httpRetrieval.requestByGet(null);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("Attempted to perform a GET request with null as URL.");
@@ -944,10 +947,10 @@ public class HttpRetrievalTest {
         String url = "whats-this://clearly.not.supported/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         when(spy.checkSupportedUrlProtocol(url)).thenReturn(false);
-        
+
         // Act
         boolean res = spy.requestByGet(url);
-        
+
         // Assert
         assertThat(res, is(false));
     }
@@ -958,38 +961,38 @@ public class HttpRetrievalTest {
         String url = "whats-this://clearly.not.supported/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         when(spy.checkSupportedUrlProtocol(url)).thenReturn(false);
-        
+
         // Act
         spy.requestByGet(url);
-        
+
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
         LoggingEvent expectedEvent = LoggingEvent.warn("Unsupported protocol used in URL for GET request: \"{}\"", url);
         assertThat(loggingEvents, contains(expectedEvent));
     }
-    
+
     @Test
     @UseDataProvider("dataProviderUrlsWithSupportedProtocols")
     public void checkSupportedUrlProtocol_supportedProtocols_returnsTrue(final String url) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         boolean res = httpRetrieval.checkSupportedUrlProtocol(url);
-        
+
         // Assert
         assertThat(res, is(true));
     }
-    
+
     @Test
     @UseDataProvider("dataProviderUrlsWithoutSupportedProtocols")
     public void checkSupportedUrlProtocol_noSupportedProtocol_returnsFalse(final String url) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         boolean res = httpRetrieval.checkSupportedUrlProtocol(url);
-        
+
         // Assert
         assertThat(res, is(false));
     }
@@ -999,10 +1002,10 @@ public class HttpRetrievalTest {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.httpResponse = null;
-        
+
         // Act
         byte[] bytes = httpRetrieval.getResponseBodyBytes();
-        
+
         // Assert
         assertThat(bytes, is(nullValue()));
     }
@@ -1016,10 +1019,10 @@ public class HttpRetrievalTest {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockEntity.getContent()).thenThrow(expectedException);
         when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-        
+
         // Act
         byte[] bytes = httpRetrieval.getResponseBodyBytes();
-        
+
         // Assert
         assertThat(bytes, is(nullValue()));
     }
@@ -1033,10 +1036,10 @@ public class HttpRetrievalTest {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockEntity.getContent()).thenThrow(expectedException);
         when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-        
+
         // Act
         byte[] bytes = httpRetrieval.getResponseBodyBytes();
-        
+
         // Assert
         assertThat(bytes, is(nullValue()));
     }
@@ -1050,10 +1053,10 @@ public class HttpRetrievalTest {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockEntity.getContent()).thenThrow(expectedException);
         when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-        
+
         // Act
         httpRetrieval.getResponseBodyBytes();
-        
+
         // Assert
         // it seems we can not easily compare events which wrap a Throwable :(
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
@@ -1073,10 +1076,10 @@ public class HttpRetrievalTest {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockEntity.getContent()).thenThrow(expectedException);
         when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-        
+
         // Act
         httpRetrieval.getResponseBodyBytes();
-        
+
         // Assert
         // it seems we can not easily compare events which wrap a Throwable :(
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
@@ -1098,10 +1101,10 @@ public class HttpRetrievalTest {
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockEntity.getContent()).thenReturn(new ByteArrayInputStream(expectedBytes));
         when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-        
+
         // Act
         byte[] actualBytes = httpRetrieval.getResponseBodyBytes();
-        
+
         // Assert
         assertThat(actualBytes, is(equalTo(expectedBytes)));
     }
@@ -1111,14 +1114,14 @@ public class HttpRetrievalTest {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.httpResponse = null;
-        
+
         // Act
         boolean res = httpRetrieval.hasCompleteContentResponseStatus();
-        
+
         // Assert
         assertThat(res, is(false));
     }
-    
+
     @Test
     public void testHasCompleteContentResponseStatus_withResponse_queriesCheckCompleteContentResponseStatus() {
         // Arrange
@@ -1128,37 +1131,37 @@ public class HttpRetrievalTest {
         when(spyRetrieval.httpResponse.getStatusLine()).thenReturn(mockStatusLine);
         when(mockStatusLine.getStatusCode()).thenReturn(999);
         when(spyRetrieval.checkCompleteContentResponseStatus(999)).thenReturn(true);
-        
+
         // Act
         boolean res = spyRetrieval.hasCompleteContentResponseStatus();
-        
+
         // Assert
         verify(spyRetrieval).checkCompleteContentResponseStatus(999);
         assertThat(res, is(true));
     }
-    
+
     @Test
     @UseDataProvider("dataProviderCompleteContentResponseStatusCodes")
     public void testCompleteContentResponseStatus_completeCode_returnsTrue(final int statusCode) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         boolean res = httpRetrieval.checkCompleteContentResponseStatus(statusCode);
-        
+
         // Assert
         assertThat(res, is(true));
     }
-    
+
     @Test
     @UseDataProvider("dataProviderIncompleteContentResponseStatus")
     public void testCompleteContentResponseStatus_incompleteCode_returnsFalse(final int statusCode) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         boolean res = httpRetrieval.checkCompleteContentResponseStatus(statusCode);
-        
+
         // Assert
         assertThat(res, is(false));
     }
@@ -1168,10 +1171,10 @@ public class HttpRetrievalTest {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.httpResponse = null;
-        
+
         // Act
         CaseInsensitiveHeaders result = httpRetrieval.getResponseHeaders();
-        
+
         // Assert
         assertThat(result, is(nullValue()));
     }
@@ -1181,140 +1184,140 @@ public class HttpRetrievalTest {
         // Arrange
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         spyRetrieval.httpResponse = mock(HttpResponse.class);
-        
+
         Header[] headersArr = new Header[0];
         when(spyRetrieval.httpResponse.getAllHeaders()).thenReturn(headersArr);
-        
+
         doReturn(mock(CaseInsensitiveHeaders.class)).when(spyRetrieval).createCaseInsensitiveHeaders();
-        
+
         // Act
         CaseInsensitiveHeaders mockHeaders = spyRetrieval.getResponseHeaders();
-        
+
         // Assert
         verify(mockHeaders).addAll(Mockito.same(headersArr));
         verifyNoMoreInteractions(mockHeaders);
     }
-    
+
     @Test
     public void testGetLastRequestedLocation_beforeRequest_returnsNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         String result = httpRetrieval.getLastRequestedLocation();
-        
+
         // Assert
         assertThat(result, is(nullValue()));
     }
-    
+
     @Test
     @DataProvider({"http://abc.local/test.html", "https://somewhere.else.local/?id=123", ":thisisgarbage:!!"})
     public void testGetLastRequestedLocation_afterRequest_returnsSameUrl(String url) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.requestByGet(url);
-        
+
         // Act
         String result = httpRetrieval.getLastRequestedLocation();
-        
+
         // Assert
         assertThat(result, is(equalTo(url)));
     }
-    
+
     @Test
     public void testGetLastRequestedLocation_afterSecondRequest_returnsSecondUrl() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.requestByGet("http://not.what.i.want/");
         httpRetrieval.requestByGet("https://thats.what.i.want/");
-        
+
         // Act
         String result = httpRetrieval.getLastRequestedLocation();
-        
+
         // Assert
         assertThat(result, is(equalTo("https://thats.what.i.want/")));
     }
-    
+
     @Test
     public void testGetLastRequestedLocation_afterSecondRequestWithNullUrl_returnsNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
         httpRetrieval.requestByGet("http://not.what.i.want/");
         httpRetrieval.requestByGet(null);
-        
+
         // Act
         String result = httpRetrieval.getLastRequestedLocation();
-        
+
         // Assert
         assertThat(result, is(nullValue()));
     }
-    
+
     @Test
     public void testGetLastRetrievedLocation_beforeRequest_returnsNull() {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
-        
+
         // Act
         String result = httpRetrieval.getLastRetrievedLocation();
-        
+
         // Assert
         assertThat(result, is(nullValue()));
     }
-    
+
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
     public void testGetLastRetrievedLocation_afterRequestManyRedirects_returnsLastRedirectLocationFromContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
         when(mockContext.getRedirectLocations()).thenReturn(Arrays.asList(
-                new URI("http://first-redirect/abc.html"), 
-                new URI("http://another.com/"), 
+                new URI("http://first-redirect/abc.html"),
+                new URI("http://another.com/"),
                 new URI(expectedUrl)
         ));
-        
+
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
-        
+
         HttpClient mockClient = mock(HttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
-        
+
         HttpResponse mockResponse = mock(HttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
-        
+
         spyRetrieval.requestByGet("http://this-was-originally-requested/");
-        
+
         // Act
         String result = spyRetrieval.getLastRetrievedLocation();
-        
+
         // Assert
         assertThat(result, is(equalTo(expectedUrl)));
     }
-    
+
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
     public void testGetLastRetrievedLocation_afterRequestNoRedirects_returnsRequestedUrl(String url) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
         when(mockContext.getRedirectLocations()).thenReturn(new ArrayList<>());
-        
+
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
 
         HttpClient mockClient = mock(HttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
-        
+
         HttpResponse mockResponse = mock(HttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
-        
+
         spyRetrieval.requestByGet(url);
-        
+
         // Act
         String result = spyRetrieval.getLastRetrievedLocation();
-        
+
         // Assert
         assertThat(result, is(equalTo(url)));
     }
-    
+
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
     public void testGetLastRetrievedLocation_afterSecondRequestWithNewContext_returnsLocationFromNewContext(String expectedUrl) throws Exception {
@@ -1324,72 +1327,72 @@ public class HttpRetrievalTest {
         when(mockSecondContext.getRedirectLocations()).thenReturn(Arrays.asList(
                 new URI(expectedUrl)
         ));
-        
+
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockFirstContext, mockSecondContext).when(spyRetrieval).createHttpClientContext();
 
         HttpClient mockClient = mock(HttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
-        
+
         HttpResponse mockResponse = mock(HttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
-        
+
         spyRetrieval.requestByGet("https://some-url.local/");
         spyRetrieval.requestByGet("https://some-url.local/");
-        
+
         // Act
         String result = spyRetrieval.getLastRetrievedLocation();
-        
+
         // Assert
         assertThat(result, is(equalTo(expectedUrl)));
     }
-    
+
     @Test
     public void testGetLastRetrievedLocation_afterSecondRequestFailed_returnsNull() throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         when(mockFirstContext.getRedirectLocations()).thenReturn(Arrays.asList(new URI("http://unexpected.url.local/")));
-        
+
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
-        
+
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockFirstContext, mockSecondContext).when(spyRetrieval).createHttpClientContext();
 
         HttpClient mockClient = mock(HttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
-        
+
         spyRetrieval.requestByGet("https://some-url.local/");
-        
+
         doThrow(new IOException()).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
-        
+
         spyRetrieval.requestByGet("https://some-url.local/");
-        
+
         // Act
         String result = spyRetrieval.getLastRetrievedLocation();
-        
+
         // Assert
         assertThat(result, is(nullValue()));
     }
-    
+
     @Test
     public void testRequestByGet_secondRequest_executesWithSecondContext() throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
-        
+
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockFirstContext, mockSecondContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
 
         HttpClient mockClient = mock(HttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
-        
+
         spyRetrieval.requestByGet("https://some-url.local/");
-        
+
         reset(mockClient);
-        
+
         // Act
         spyRetrieval.requestByGet("https://some-url.local/");
-        
+
         // Assert
         verify(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.same(mockSecondContext));
     }
