@@ -312,7 +312,7 @@ public class HttpRetrieval {
 
         List<URI> redirectLocations = httpClientContext.getRedirectLocations();
 
-        if (redirectLocations.isEmpty()) {
+        if ((redirectLocations == null) || redirectLocations.isEmpty()) {
             return getLastRequestedLocation();
         } else {
             URI lastRedirectLocation = redirectLocations.get(redirectLocations.size() - 1);

@@ -1320,6 +1320,31 @@ public class HttpRetrievalTest {
 
     @Test
     @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    public void testGetLastRetrievedLocation_afterRequestNullAsRedirectLocations_returnsRequestedUrl(String url) throws Exception {
+        // Arrange
+        HttpClientContext mockContext = mock(HttpClientContext.class);
+        when(mockContext.getRedirectLocations()).thenReturn(null);
+
+        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+        doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
+
+        HttpClient mockClient = mock(HttpClient.class);
+        doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+
+        spyRetrieval.requestByGet(url);
+
+        // Act
+        String result = spyRetrieval.getLastRetrievedLocation();
+
+        // Assert
+        assertThat(result, is(equalTo(url)));
+    }
+
+    @Test
+    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
     public void testGetLastRetrievedLocation_afterSecondRequestWithNewContext_returnsLocationFromNewContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
