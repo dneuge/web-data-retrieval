@@ -12,9 +12,11 @@ import java.time.Instant;
  * <p>
  * The holder is immutable.
  * </p>
+ *
  * @param <T> type of information to hold
  */
 public class RetrievedData<T> {
+
     private final Instant retrievedTime;
     private final String requestedLocation;
     private final String retrievedLocation;
@@ -22,6 +24,7 @@ public class RetrievedData<T> {
 
     /**
      * Creates a new holder with given meta data description.
+     *
      * @param retrievedTime time of completed data retrieval
      * @param requestedLocation initially requested data location
      * @param retrievedLocation actual location of retrieved data
@@ -36,6 +39,7 @@ public class RetrievedData<T> {
 
     /**
      * Returns the time data has been completed retrieval at.
+     *
      * @return time of completed data retrieval
      */
     public Instant getRetrievedTime() {
@@ -43,11 +47,11 @@ public class RetrievedData<T> {
     }
 
     /**
-     * Returns the description of initially requested data location.
-     * This may not match the actual location of retrieved data if redirects
-     * had to be followed.
-     * See {@link #getRetrievedLocation()} for the actual location after any
-     * redirects.
+     * Returns the description of initially requested data location. This may
+     * not match the actual location of retrieved data if redirects had to be
+     * followed. See {@link #getRetrievedLocation()} for the actual location
+     * after any redirects.
+     *
      * @return initially requested data location
      */
     public String getRequestedLocation() {
@@ -55,10 +59,11 @@ public class RetrievedData<T> {
     }
 
     /**
-     * Returns the description of actual retrieved data location.
-     * This describes the location after following any redirects.
-     * See {@link #getRequestedLocation()} if you need to know the
-     * initially requested location.
+     * Returns the description of actual retrieved data location. This describes
+     * the location after following any redirects. See
+     * {@link #getRequestedLocation()} if you need to know the initially
+     * requested location.
+     *
      * @return actual location of retrieved data
      */
     public String getRetrievedLocation() {
@@ -67,6 +72,7 @@ public class RetrievedData<T> {
 
     /**
      * Returns the retrieved data.
+     *
      * @return retrieved data
      */
     public T getData() {
