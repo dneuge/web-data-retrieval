@@ -1,6 +1,6 @@
 # Web Data Retrieval Helper
 
-[![Build Status](https://travis-ci.org/dneuge/web-data-retrieval.svg?branch=master)](https://travis-ci.org/dneuge/web-data-retrieval)
+[![Build Status](https://travis-ci.com/dneuge/web-data-retrieval.svg?branch=master)](https://travis-ci.com/dneuge/web-data-retrieval)
 [![Coverage Status](https://coveralls.io/repos/github/dneuge/web-data-retrieval/badge.svg?branch=master)](https://coveralls.io/github/dneuge/web-data-retrieval?branch=master)
 [![License: MIT with dependencies](https://img.shields.io/badge/license-MIT%20w%2F%20deps-blue.svg)](LICENSE.md)
 
