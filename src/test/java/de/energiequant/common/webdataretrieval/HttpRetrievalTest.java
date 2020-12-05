@@ -1,9 +1,27 @@
 package de.energiequant.common.webdataretrieval;
 
-import com.google.common.collect.ImmutableList;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -17,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -28,17 +47,19 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.HttpClientBuilder;
-import static org.hamcrest.Matchers.*;
 import org.hamcrest.junit.ExpectedException;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import static org.mockito.ArgumentMatchers.same;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.*;
 import org.mockito.invocation.Invocation;
+
+import com.google.common.collect.ImmutableList;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+
 import uk.org.lidalia.slf4jext.Level;
 import uk.org.lidalia.slf4jtest.LoggingEvent;
 import uk.org.lidalia.slf4jtest.TestLogger;
@@ -59,7 +80,7 @@ public class HttpRetrievalTest {
 
     @DataProvider
     public static String[] dataProviderUrlsWithSupportedProtocols() {
-        return new String[]{
+        return new String[] {
             "http://a.b/",
             "http://a.b.de/a.html",
             "HTTP://a.b.de/a.html",
@@ -70,7 +91,7 @@ public class HttpRetrievalTest {
 
     @DataProvider
     public static String[] dataProviderUrlsWithoutSupportedProtocols() {
-        return new String[]{
+        return new String[] {
             null,
             "",
             "   ",
@@ -89,7 +110,7 @@ public class HttpRetrievalTest {
 
     @DataProvider
     public static Object[] dataProviderCompleteContentResponseStatusCodes() {
-        return new Integer[]{
+        return new Integer[] {
             200,
             201,
             202,
@@ -101,7 +122,7 @@ public class HttpRetrievalTest {
 
     @DataProvider
     public static Object[] dataProviderIncompleteContentResponseStatus() {
-        return new Integer[]{
+        return new Integer[] {
             0,
             301,
             302,
@@ -119,17 +140,16 @@ public class HttpRetrievalTest {
     }
 
     /**
-     * Extracts the default request configuration from a collection of
-     * invocations.
+     * Extracts the default request configuration from a collection of invocations.
      *
      * @param invocations invocations to extract parameter from
      * @return default request configuration as passed by invocation parameter
      */
     private RequestConfig getRequestConfigFromInvocations(final Collection<Invocation> invocations) {
         List<RequestConfig> setRequestConfigs = invocations.stream()
-                .filter((Invocation t) -> t.getMethod().getName().equals("setDefaultRequestConfig"))
-                .map((Invocation t) -> (RequestConfig) t.getArgument(0))
-                .collect(Collectors.toList());
+            .filter((Invocation t) -> t.getMethod().getName().equals("setDefaultRequestConfig"))
+            .map((Invocation t) -> (RequestConfig) t.getArgument(0))
+            .collect(Collectors.toList());
 
         assertThat(setRequestConfigs, hasSize(1));
 
@@ -318,7 +338,9 @@ public class HttpRetrievalTest {
 
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
-        LoggingEvent expectedEvent = LoggingEvent.warn("User-agent string is required and cannot be set to null! Using previous/default value.");
+        LoggingEvent expectedEvent = LoggingEvent.warn(
+            "User-agent string is required and cannot be set to null! Using previous/default value." //
+        );
         assertThat(loggingEvents, contains(expectedEvent));
     }
 
@@ -346,7 +368,9 @@ public class HttpRetrievalTest {
 
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
-        LoggingEvent expectedEvent = LoggingEvent.warn("User-agent string is required and cannot be set to empty/white-space string! Using previous/default value.");
+        LoggingEvent expectedEvent = LoggingEvent.warn(
+            "User-agent string is required and cannot be set to empty/white-space string! Using previous/default value." //
+        );
         assertThat(loggingEvents, contains(expectedEvent));
     }
 
@@ -463,7 +487,10 @@ public class HttpRetrievalTest {
 
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
-        LoggingEvent expectedEvent = LoggingEvent.warn("Attempted to set a negative number of maximum allowed redirects ({}), limiting to 0.", -1);
+        LoggingEvent expectedEvent = LoggingEvent.warn(
+            "Attempted to set a negative number of maximum allowed redirects ({}), limiting to 0.",
+            -1 //
+        );
         assertThat(loggingEvents, contains(expectedEvent));
     }
 
@@ -490,7 +517,10 @@ public class HttpRetrievalTest {
 
         // Assert
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
-        LoggingEvent expectedEvent = LoggingEvent.warn("Allowing a high number of redirects to be followed ({}), this may not make sense and should be reduced for practical reasons.", 11);
+        LoggingEvent expectedEvent = LoggingEvent.warn(
+            "Allowing a high number of redirects to be followed ({}), this may not make sense and should be reduced for practical reasons.",
+            11 //
+        );
         assertThat(loggingEvents, contains(expectedEvent));
     }
 
@@ -661,7 +691,7 @@ public class HttpRetrievalTest {
 
         // Assert
         // NOTE: this test relies on getContentDecoderMap returning the same
-        //       instance for every call
+        // instance for every call
         verify(spyBuilder).setContentDecoderRegistry(expectedMap);
     }
 
@@ -902,8 +932,8 @@ public class HttpRetrievalTest {
         // Assert
         // it seems we can not easily compare events which wrap a Throwable :(
         List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents().stream()
-                .filter((LoggingEvent t) -> t.getLevel() == Level.WARN)
-                .collect(Collectors.toList());
+            .filter((LoggingEvent t) -> t.getLevel() == Level.WARN)
+            .collect(Collectors.toList());
         assertThat(loggingEvents.size(), is(1));
         LoggingEvent actualEvent = loggingEvents.iterator().next();
         assertThat(actualEvent.getMessage(), is("GET request to \"{}\" failed with an exception."));
@@ -1093,7 +1123,7 @@ public class HttpRetrievalTest {
     @Test
     public void testGetResponseBodyBytes_withResponse_returnsBodyBytes() throws IOException {
         // Arrange
-        byte[] expectedBytes = new byte[]{
+        byte[] expectedBytes = new byte[] {
             'A', 'B', 'C', '\n', '1', '2', '3', 0, 1, 2, 3
         };
         HttpRetrieval httpRetrieval = new HttpRetrieval();
@@ -1211,7 +1241,7 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    @DataProvider({"http://abc.local/test.html", "https://somewhere.else.local/?id=123", ":thisisgarbage:!!"})
+    @DataProvider({ "http://abc.local/test.html", "https://somewhere.else.local/?id=123", ":thisisgarbage:!!" })
     public void testGetLastRequestedLocation_afterRequest_returnsSameUrl(String url) {
         // Arrange
         HttpRetrieval httpRetrieval = new HttpRetrieval();
@@ -1265,15 +1295,17 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    @DataProvider({ "https://this-is-the-actual.location:123/aaa.aspx?id=54321&something",
+        "http://much-easier.local/test.html" })
     public void testGetLastRetrievedLocation_afterRequestManyRedirects_returnsLastRedirectLocationFromContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
-        when(mockContext.getRedirectLocations()).thenReturn(Arrays.asList(
+        when(mockContext.getRedirectLocations())
+            .thenReturn(Arrays.asList(
                 new URI("http://first-redirect/abc.html"),
                 new URI("http://another.com/"),
-                new URI(expectedUrl)
-        ));
+                new URI(expectedUrl) //
+            ));
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
@@ -1282,7 +1314,8 @@ public class HttpRetrievalTest {
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class),
+            Mockito.any(HttpClientContext.class));
 
         spyRetrieval.requestByGet("http://this-was-originally-requested/");
 
@@ -1294,7 +1327,8 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    @DataProvider({ "https://this-is-the-actual.location:123/aaa.aspx?id=54321&something",
+        "http://much-easier.local/test.html" })
     public void testGetLastRetrievedLocation_afterRequestNoRedirects_returnsRequestedUrl(String url) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
@@ -1307,7 +1341,10 @@ public class HttpRetrievalTest {
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        doReturn(mockResponse).when(mockClient).execute(
+            Mockito.any(HttpUriRequest.class),
+            Mockito.any(HttpClientContext.class) //
+        );
 
         spyRetrieval.requestByGet(url);
 
@@ -1319,7 +1356,8 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    @DataProvider({ "https://this-is-the-actual.location:123/aaa.aspx?id=54321&something",
+        "http://much-easier.local/test.html" })
     public void testGetLastRetrievedLocation_afterRequestNullAsRedirectLocations_returnsRequestedUrl(String url) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
@@ -1332,7 +1370,10 @@ public class HttpRetrievalTest {
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        doReturn(mockResponse).when(mockClient).execute(
+            Mockito.any(HttpUriRequest.class),
+            Mockito.any(HttpClientContext.class) //
+        );
 
         spyRetrieval.requestByGet(url);
 
@@ -1344,13 +1385,14 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    @DataProvider({"https://this-is-the-actual.location:123/aaa.aspx?id=54321&something", "http://much-easier.local/test.html"})
+    @DataProvider({ "https://this-is-the-actual.location:123/aaa.aspx?id=54321&something",
+        "http://much-easier.local/test.html" })
     public void testGetLastRetrievedLocation_afterSecondRequestWithNewContext_returnsLocationFromNewContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
         when(mockSecondContext.getRedirectLocations()).thenReturn(Arrays.asList(
-                new URI(expectedUrl)
+            new URI(expectedUrl) //
         ));
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
@@ -1360,7 +1402,10 @@ public class HttpRetrievalTest {
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
         HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        doReturn(mockResponse).when(mockClient).execute(
+            Mockito.any(HttpUriRequest.class),
+            Mockito.any(HttpClientContext.class) //
+        );
 
         spyRetrieval.requestByGet("https://some-url.local/");
         spyRetrieval.requestByGet("https://some-url.local/");
@@ -1376,7 +1421,9 @@ public class HttpRetrievalTest {
     public void testGetLastRetrievedLocation_afterSecondRequestFailed_returnsNull() throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
-        when(mockFirstContext.getRedirectLocations()).thenReturn(Arrays.asList(new URI("http://unexpected.url.local/")));
+        when(mockFirstContext.getRedirectLocations()).thenReturn(Arrays.asList(
+            new URI("http://unexpected.url.local/") //
+        ));
 
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
 
@@ -1388,7 +1435,10 @@ public class HttpRetrievalTest {
 
         spyRetrieval.requestByGet("https://some-url.local/");
 
-        doThrow(new IOException()).when(mockClient).execute(Mockito.any(HttpUriRequest.class), Mockito.any(HttpClientContext.class));
+        doThrow(new IOException()).when(mockClient).execute(
+            Mockito.any(HttpUriRequest.class),
+            Mockito.any(HttpClientContext.class) //
+        );
 
         spyRetrieval.requestByGet("https://some-url.local/");
 
@@ -1406,7 +1456,9 @@ public class HttpRetrievalTest {
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
-        doReturn(mockFirstContext, mockSecondContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
+        doReturn(mockFirstContext, mockSecondContext, (HttpClientContext) null)
+            .when(spyRetrieval)
+            .createHttpClientContext();
 
         HttpClient mockClient = mock(HttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();

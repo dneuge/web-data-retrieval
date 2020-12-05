@@ -47,10 +47,10 @@ public class RetrievedData<T> {
     }
 
     /**
-     * Returns the description of initially requested data location. This may
-     * not match the actual location of retrieved data if redirects had to be
-     * followed. See {@link #getRetrievedLocation()} for the actual location
-     * after any redirects.
+     * Returns the description of initially requested data location. This may not
+     * match the actual location of retrieved data if redirects had to be followed.
+     * See {@link #getRetrievedLocation()} for the actual location after any
+     * redirects.
      *
      * @return initially requested data location
      */
@@ -59,10 +59,9 @@ public class RetrievedData<T> {
     }
 
     /**
-     * Returns the description of actual retrieved data location. This describes
-     * the location after following any redirects. See
-     * {@link #getRequestedLocation()} if you need to know the initially
-     * requested location.
+     * Returns the description of actual retrieved data location. This describes the
+     * location after following any redirects. See {@link #getRequestedLocation()}
+     * if you need to know the initially requested location.
      *
      * @return actual location of retrieved data
      */

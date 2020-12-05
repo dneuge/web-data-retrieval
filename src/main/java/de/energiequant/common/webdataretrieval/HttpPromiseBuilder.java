@@ -26,9 +26,9 @@ public class HttpPromiseBuilder<T> {
     /**
      * Constructs a new builder applying the given decoder to all requests.
      *
-     * @param decoder receives all successful {@link HttpRetrieval}s for
-     * decoding to type T; should be stateless in order to reuse builder and
-     * apply concurrently
+     * @param decoder receives all successful {@link HttpRetrieval}s for decoding to
+     *        type T; should be stateless in order to reuse builder and apply
+     *        concurrently
      */
     public HttpPromiseBuilder(Function<HttpRetrieval, T> decoder) {
         this.decoder = decoder;
@@ -41,17 +41,17 @@ public class HttpPromiseBuilder<T> {
      * Already initiated requests will remain unchanged.
      * </p>
      * <p>
-     * If left unconfigured, default configuration of {@link HttpRetrieval} will
-     * be applied.
+     * If left unconfigured, default configuration of {@link HttpRetrieval} will be
+     * applied.
      * </p>
      * <p>
-     * The configuration object itself should remain unchanged upon supplying it
-     * to a builder (builder doesn't copy the configuration, thus it is not
-     * being isolated from concurrent modification).
+     * The configuration object itself should remain unchanged upon supplying it to
+     * a builder (builder doesn't copy the configuration, thus it is not being
+     * isolated from concurrent modification).
      * </p>
      *
-     * @param configurationTemplate configuration to apply to subsequently
-     * initiated requests; configuration object must not change concurrently
+     * @param configurationTemplate configuration to apply to subsequently initiated
+     *        requests; configuration object must not change concurrently
      * @return same builder for method-chaining
      */
     public HttpPromiseBuilder<T> withConfiguration(HttpRetrieval configurationTemplate) {
@@ -65,9 +65,9 @@ public class HttpPromiseBuilder<T> {
     }
 
     /**
-     * The returned future retrieves the decoded content from specified URL.
-     * Failure to retrieve or decode the content (including exceptions of any
-     * kind) should be expected and can easily be handled through default
+     * The returned future retrieves the decoded content from specified URL. Failure
+     * to retrieve or decode the content (including exceptions of any kind) should
+     * be expected and can easily be handled through default
      * {@link CompletableFuture} API.
      *
      * @param url URL of content to be retrieved
@@ -89,7 +89,8 @@ public class HttpPromiseBuilder<T> {
                 }
 
                 if (!retrieval.hasCompleteContentResponseStatus()) {
-                    throw new RuntimeException("GET request for " + url + " returned incomplete content by HTTP response status code.");
+                    throw new RuntimeException(
+                        "GET request for " + url + " returned incomplete content by HTTP response status code.");
                 }
 
                 T decoded = decoder.apply(retrieval);
@@ -102,8 +103,7 @@ public class HttpPromiseBuilder<T> {
     }
 
     /**
-     * Creates a new instance of {@link HttpRetrieval}. Required for
-     * unit-testing.
+     * Creates a new instance of {@link HttpRetrieval}. Required for unit-testing.
      *
      * @return new instance of {@link HttpRetrieval}
      */

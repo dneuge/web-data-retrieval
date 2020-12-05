@@ -1,22 +1,13 @@
 package de.energiequant.common.webdataretrieval;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import org.apache.http.Header;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -24,6 +15,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.http.Header;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 @RunWith(DataProviderRunner.class)
 public class CaseInsensitiveHeadersTest {
@@ -121,8 +130,8 @@ public class CaseInsensitiveHeadersTest {
     @Test
     public void testAddAll_fullArray_returnsSameInstance() {
         // Arrange
-        Header[] arr = new Header[]{
-            mockHeader("a", "0123"),};
+        Header[] arr = new Header[] {
+            mockHeader("a", "0123"), };
 
         // Act
         CaseInsensitiveHeaders res = spyHeaders.addAll(arr);
@@ -134,12 +143,13 @@ public class CaseInsensitiveHeadersTest {
     @Test
     public void testAddAll_fullArray_onlyAddsAllItems() {
         // Arrange
-        Header[] arr = new Header[]{
+        Header[] arr = new Header[] {
             mockHeader("a", "0123"),
             mockHeader("B-name", "something; here"),
             mockHeader("A", "3210"),
             mockHeader("B_name", "not the same"),
-            mockHeader("b-NAME", "but, this is"),};
+            mockHeader("b-NAME", "but, this is"), //
+        };
 
         // Act
         spyHeaders.addAll(arr);
@@ -227,7 +237,10 @@ public class CaseInsensitiveHeadersTest {
         List<String> res = spyHeaders.getAllByName("tHiS aLtErNaTeS");
 
         // Assert
-        assertThat(res, contains("first entry", "That's the second entry.", "will; include, all !$§(/-% special chars as well"));
+        assertThat(
+            res,
+            contains("first entry", "That's the second entry.", "will; include, all !$§(/-% special chars as well") //
+        );
     }
 
     @Test
@@ -257,7 +270,7 @@ public class CaseInsensitiveHeadersTest {
     }
 
     @Test
-    @DataProvider({"1st", "first element"})
+    @DataProvider({ "1st", "first element" })
     public void testGetFirstByName_getAllByNameReturnsListWithElements_returnsFirstEntryOfList(String expectedString) {
         // Arrange
         List<String> list = Arrays.asList(expectedString, "second", "third");

@@ -1,15 +1,26 @@
 package de.energiequant.common.webdataretrieval;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import static org.apache.commons.lang3.StringEscapeUtils.unescapeHtml4;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
 import java.nio.charset.Charset;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
-import static org.apache.commons.lang3.StringEscapeUtils.unescapeHtml4;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,13 +29,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 
 @RunWith(DataProviderRunner.class)
 public class DefaultHttpRetrievalDecodersTest {
@@ -42,9 +50,19 @@ public class DefaultHttpRetrievalDecodersTest {
 
     @DataProvider
     public static Object[][] dataproviderCharsetDecoding() {
-        return new Object[][]{
-            new Object[]{byteArray(0xc3, 0xa4, 0xc3, 0xb6, 0xc3, 0xbc, 0x0a, 0xc3, 0x9f), "UTF-8", Charset.forName("UTF-8"), unescapeHtml4("&auml;&ouml;&uuml;\n&szlig;")},
-            new Object[]{byteArray(0xe4, 0xf6, 0xfc, 0x0a, 0xdf), "latin1", Charset.forName("ISO-8859-1"), unescapeHtml4("&auml;&ouml;&uuml;\n&szlig;")},};
+        return new Object[][] {
+            {
+                byteArray(0xc3, 0xa4, 0xc3, 0xb6, 0xc3, 0xbc, 0x0a, 0xc3, 0x9f),
+                "UTF-8",
+                Charset.forName("UTF-8"), unescapeHtml4("&auml;&ouml;&uuml;\n&szlig;") //
+            },
+            {
+                byteArray(0xe4, 0xf6, 0xfc, 0x0a, 0xdf),
+                "latin1",
+                Charset.forName("ISO-8859-1"),
+                unescapeHtml4("&auml;&ouml;&uuml;\n&szlig;") //
+            }, //
+        };
     }
 
     private static byte[] byteArray(int... bytes) {
@@ -99,12 +117,16 @@ public class DefaultHttpRetrievalDecodersTest {
         // Arrange
         HttpRetrieval mockRetrieval = mock(HttpRetrieval.class, Answers.RETURNS_DEEP_STUBS);
         when(mockRetrieval.getResponseBodyBytes()).thenReturn(bytes);
-        when(mockRetrieval.getResponseHeaders().getFirstByName(argEqIgnoreCase("content-type"))).thenReturn("text/plain; charset=" + charsetName);
+        when(mockRetrieval.getResponseHeaders().getFirstByName(argEqIgnoreCase("content-type")))
+            .thenReturn("text/plain; charset=" + charsetName);
 
         Charset wrongCharset = !charset.name().equals("KOI8-R") ? Charset.forName("KOI8-R") : Charset.forName("UTF-8");
 
         // Precondition
-        assertThat("Precondition: wrong and correct charsets must not decode to same result", new String(bytes, wrongCharset), is(not(equalTo(new String(bytes, charset)))));
+        assertThat(
+            "Precondition: wrong and correct charsets must not decode to same result",
+            new String(bytes, wrongCharset), is(not(equalTo(new String(bytes, charset)))) //
+        );
 
         // Act
         String res = spyDecoders.bodyAsStringWithHeaderCharacterSet(wrongCharset).apply(mockRetrieval);
@@ -119,7 +141,8 @@ public class DefaultHttpRetrievalDecodersTest {
         // Arrange
         HttpRetrieval mockRetrieval = mock(HttpRetrieval.class, Answers.RETURNS_DEEP_STUBS);
         when(mockRetrieval.getResponseBodyBytes()).thenReturn(bytes);
-        when(mockRetrieval.getResponseHeaders().getFirstByName(argEqIgnoreCase("content-type"))).thenReturn("text/plain; charset=DEFINITELY-UNKNOWN");
+        when(mockRetrieval.getResponseHeaders().getFirstByName(argEqIgnoreCase("content-type")))
+            .thenReturn("text/plain; charset=DEFINITELY-UNKNOWN");
 
         // Act
         String res = spyDecoders.bodyAsStringWithHeaderCharacterSet(charset).apply(mockRetrieval);
@@ -134,7 +157,8 @@ public class DefaultHttpRetrievalDecodersTest {
         // Arrange
         HttpRetrieval mockRetrieval = mock(HttpRetrieval.class, Answers.RETURNS_DEEP_STUBS);
         when(mockRetrieval.getResponseBodyBytes()).thenReturn(bytes);
-        when(mockRetrieval.getResponseHeaders().getFirstByName(argEqIgnoreCase("content-type"))).thenReturn("text/plain");
+        when(mockRetrieval.getResponseHeaders().getFirstByName(argEqIgnoreCase("content-type")))
+            .thenReturn("text/plain");
 
         // Act
         String res = spyDecoders.bodyAsStringWithHeaderCharacterSet(charset).apply(mockRetrieval);
@@ -187,7 +211,7 @@ public class DefaultHttpRetrievalDecodersTest {
     }
 
     @Test
-    @DataProvider({"1523805621000", "123456"})
+    @DataProvider({ "1523805621000", "123456" })
     public void testWithMetaData_anyDecoder_containerHoldsCurrentTime(long expectedEpochMillis) {
         // Arrange
         HttpRetrieval mockRetrieval = mock(HttpRetrieval.class);
@@ -222,7 +246,7 @@ public class DefaultHttpRetrievalDecodersTest {
     }
 
     @Test
-    @DataProvider({"http://something/somewhere", "https://whatever/"})
+    @DataProvider({ "http://something/somewhere", "https://whatever/" })
     public void testWithMetaData_anyDecoder_containerHoldsLastRequestedLocation(String expectedLocation) {
         // Arrange
         HttpRetrieval mockRetrieval = mock(HttpRetrieval.class);
@@ -253,7 +277,7 @@ public class DefaultHttpRetrievalDecodersTest {
     }
 
     @Test
-    @DataProvider({"http://something/somewhere", "https://whatever/"})
+    @DataProvider({ "http://something/somewhere", "https://whatever/" })
     public void testWithMetaData_anyDecoder_containerHoldsLastRetrievedLocation(String expectedLocation) {
         // Arrange
         HttpRetrieval mockRetrieval = mock(HttpRetrieval.class);

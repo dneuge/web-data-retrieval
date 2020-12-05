@@ -1,19 +1,10 @@
 package de.energiequant.common.webdataretrieval;
 
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
@@ -23,8 +14,23 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 
 @RunWith(DataProviderRunner.class)
 public class HttpPromiseBuilderTest {
@@ -81,7 +87,7 @@ public class HttpPromiseBuilderTest {
     }
 
     @Test
-    @DataProvider({"http://first.url.local/abc.html", "https://something.else.local/?id=123"})
+    @DataProvider({ "http://first.url.local/abc.html", "https://something.else.local/?id=123" })
     public void testRequestByGet_always_passesUrlToRetrieval(String expectedUrl) throws Exception {
         // Arrange (nothing to do)
 
@@ -187,14 +193,16 @@ public class HttpPromiseBuilderTest {
             }
         }).when(mockRetrieval).requestByGet(Mockito.any(CharSequence.class));
 
-        when(mockDecoder.apply(Mockito.any(HttpRetrieval.class))).thenReturn(new Object()); // causes "not null" to be available from future when finished
+        // cause "not null" to be available from future when finished
+        when(mockDecoder.apply(Mockito.any(HttpRetrieval.class))).thenReturn(new Object());
 
         // Act 1: start and delay
         CompletableFuture<?> future = spyBuilder.requestByGet("http://myUrl.local/");
 
         // Assert 1: must not have run past sync yet
         Object interimResult = future.getNow(null); // returns null if not finished
-        assertThat("Promise should not have run past sync yet (if it did, it did not spawn async)", interimResult, is(nullValue()));
+        assertThat("Promise should not have run past sync yet (if it did, it did not spawn async)", interimResult,
+            is(nullValue()));
 
         // Act 2: continue answer execution and allow answer thread to complete
         synchronized (syncObject) {
@@ -207,7 +215,8 @@ public class HttpPromiseBuilderTest {
 
         // Assert 2: we now should have a result
         Object finalResult = future.getNow(null); // returns null if not finished
-        assertThat("Promise should have run past sync now (completed/joined thread again)", finalResult, is(notNullValue()));
+        assertThat("Promise should have run past sync now (completed/joined thread again)", finalResult,
+            is(notNullValue()));
     }
 
     @Test

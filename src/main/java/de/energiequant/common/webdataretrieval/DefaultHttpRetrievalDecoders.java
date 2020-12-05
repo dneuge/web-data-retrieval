@@ -23,8 +23,8 @@ public class DefaultHttpRetrievalDecoders {
      *
      * @param <T> type returned by wrapped decoder
      * @param decoder decoder to be wrapped, must not be null
-     * @return results of given decoder inside a container holding meta data
-     * about retrieval
+     * @return results of given decoder inside a container holding meta data about
+     *         retrieval
      */
     public <T> Function<HttpRetrieval, RetrievedData<T>> withMetaData(Function<HttpRetrieval, T> decoder) {
         if (decoder == null) {
@@ -68,13 +68,12 @@ public class DefaultHttpRetrievalDecoders {
 
     /**
      * Builds a decoder which decodes the response body using the character set
-     * specified in HTTP headers. If header-specified character set is
-     * unavailable, the given fallback character set will be used instead.
+     * specified in HTTP headers. If header-specified character set is unavailable,
+     * the given fallback character set will be used instead.
      *
      * @param fallbackCharacterSet fallback character set to apply if retrieving
-     * character set from header fails
-     * @return response body decoded with header-specified or fallback character
-     * set
+     *        character set from header fails
+     * @return response body decoded with header-specified or fallback character set
      */
     public Function<HttpRetrieval, String> bodyAsStringWithHeaderCharacterSet(Charset fallbackCharacterSet) {
         if (fallbackCharacterSet == null) {
@@ -101,8 +100,7 @@ public class DefaultHttpRetrievalDecoders {
      * header.
      *
      * @param retrieval used to retrieve response headers from
-     * @return character set specified in Content-Type header; null if
-     * unavailable
+     * @return character set specified in Content-Type header; null if unavailable
      */
     private Charset getCharacterSetByContentType(HttpRetrieval retrieval) {
         String charsetName = extractCharacterSetNameFromContentType(retrieval);
@@ -119,7 +117,7 @@ public class DefaultHttpRetrievalDecoders {
      *
      * @param retrieval used to retrieve response headers from
      * @return character set name as specified in Content-Type header; null if
-     * missing
+     *         missing
      */
     private String extractCharacterSetNameFromContentType(HttpRetrieval retrieval) {
         String contentType = retrieval.getResponseHeaders().getFirstByName(HTTP_HEADER_CONTENT_TYPE);
@@ -137,8 +135,8 @@ public class DefaultHttpRetrievalDecoders {
     }
 
     /**
-     * Returns current time via static method call {@link Instant#now()}.
-     * Required for unit-testing.
+     * Returns current time via static method call {@link Instant#now()}. Required
+     * for unit-testing.
      *
      * @return current time via {@link Instant#now()}
      */

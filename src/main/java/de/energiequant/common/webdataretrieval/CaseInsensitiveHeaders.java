@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 
@@ -26,9 +27,9 @@ public class CaseInsensitiveHeaders {
     private final HashMap<String, List<String>> map = new HashMap<>();
 
     /**
-     * Adds all {@link Header}s as available from {@link HttpEntity}. Adding
-     * headers is not thread-safe and should be avoided after providing the
-     * container to outside.
+     * Adds all {@link Header}s as available from {@link HttpEntity}. Adding headers
+     * is not thread-safe and should be avoided after providing the container to
+     * outside.
      *
      * @param headers headers to be indexed; names and values must not be null
      * @return same instance for method-chaining
@@ -46,8 +47,8 @@ public class CaseInsensitiveHeaders {
     }
 
     /**
-     * Adds the given value to be indexed by the specified name. Adding headers
-     * is not thread-safe and should be avoided after providing the container to
+     * Adds the given value to be indexed by the specified name. Adding headers is
+     * not thread-safe and should be avoided after providing the container to
      * outside.
      *
      * @param name name will be converted to lower case; must not be null
@@ -99,8 +100,8 @@ public class CaseInsensitiveHeaders {
      * returned in order of appearance.
      *
      * @param name header name is case-insensitive
-     * @return values indexed by name; empty if no value has been recorded for
-     * given name
+     * @return values indexed by name; empty if no value has been recorded for given
+     *         name
      */
     public List<String> getAllByName(String name) {
         List<String> list = map.getOrDefault(name.toLowerCase(), new ArrayList<>());

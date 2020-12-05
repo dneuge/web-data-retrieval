@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -41,16 +42,16 @@ public class HttpRetrieval {
     private String lastRequestedLocation = null;
 
     private static final Pattern PATTERN_URL_PROTOCOL = Pattern.compile("^([a-z]+)://.*", Pattern.CASE_INSENSITIVE);
-    private static final Set<String> supportedUrlProtocols = new TreeSet<String>(Arrays.asList(new String[]{
+    private static final Set<String> supportedUrlProtocols = new TreeSet<String>(Arrays.asList(new String[] {
         // list all URL protocols in lower-case
         "http",
         "https"
     }));
 
     /**
-     * Copies configuration to another instance of HttpRetrieval. Result data
-     * will not be copied, so this method can be used to help on instantiation
-     * of fresh objects using this instance as a prototype.
+     * Copies configuration to another instance of HttpRetrieval. Result data will
+     * not be copied, so this method can be used to help on instantiation of fresh
+     * objects using this instance as a prototype.
      *
      * @param other instance to configure
      */
@@ -82,8 +83,8 @@ public class HttpRetrieval {
     }
 
     /**
-     * Sets the user agent string to identify all requests with. Null or user
-     * agent strings only consisting of white-spaces will not be accepted.
+     * Sets the user agent string to identify all requests with. Null or user agent
+     * strings only consisting of white-spaces will not be accepted.
      *
      * @param userAgent complete user agent string to use
      * @return same instance for method-chaining
@@ -92,7 +93,8 @@ public class HttpRetrieval {
         if (userAgent == null) {
             logger.warn("User-agent string is required and cannot be set to null! Using previous/default value.");
         } else if (userAgent.trim().isEmpty()) {
-            logger.warn("User-agent string is required and cannot be set to empty/white-space string! Using previous/default value.");
+            logger.warn(
+                "User-agent string is required and cannot be set to empty/white-space string! Using previous/default value.");
         } else {
             this.userAgent = userAgent;
         }
@@ -117,10 +119,16 @@ public class HttpRetrieval {
      */
     public HttpRetrieval setMaximumFollowedRedirects(int maximumFollowedRedirects) {
         if (maximumFollowedRedirects < 0) {
-            logger.warn("Attempted to set a negative number of maximum allowed redirects ({}), limiting to 0.", maximumFollowedRedirects);
+            logger.warn(
+                "Attempted to set a negative number of maximum allowed redirects ({}), limiting to 0.",
+                maximumFollowedRedirects //
+            );
             maximumFollowedRedirects = 0;
         } else if (maximumFollowedRedirects > 10) {
-            logger.warn("Allowing a high number of redirects to be followed ({}), this may not make sense and should be reduced for practical reasons.", maximumFollowedRedirects);
+            logger.warn(
+                "Allowing a high number of redirects to be followed ({}), this may not make sense and should be reduced for practical reasons.",
+                maximumFollowedRedirects //
+            );
         }
 
         this.maximumFollowedRedirects = maximumFollowedRedirects;
@@ -148,21 +156,23 @@ public class HttpRetrieval {
     }
 
     /**
-     * Returns a single instance of a map of InputStreamFactory instances to be
-     * used for decoding streams indexed by their HTTP Content-Encoding header.
-     * The returned map should usually be unmodifiable so it can be reused
-     * safely after a single initialization. Content-Encoding usually indicates
-     * compression, so decoders should perform gzip decompression etc.
+     * Returns a single instance of a map of InputStreamFactory instances to be used
+     * for decoding streams indexed by their HTTP Content-Encoding header. The
+     * returned map should usually be unmodifiable so it can be reused safely after
+     * a single initialization. Content-Encoding usually indicates compression, so
+     * decoders should perform gzip decompression etc.
      *
-     * @return InputStreamFactory instances to be used for content stream
-     * decoding
+     * @return InputStreamFactory instances to be used for content stream decoding
      */
     protected Map<String, InputStreamFactory> getContentDecoderMap() {
         // only initialize map once
         synchronized (this) {
             if (unmodifiableContentDecoderMap == null) {
                 Map<String, InputStreamFactory> contentDecoderMap = new HashMap<>();
-                contentDecoderMap.put("gzip", (InputStreamFactory) (InputStream instream) -> new GZIPInputStream(instream));
+                contentDecoderMap.put(
+                    "gzip",
+                    (InputStreamFactory) (InputStream instream) -> new GZIPInputStream(instream) //
+                );
                 unmodifiableContentDecoderMap = Collections.unmodifiableMap(contentDecoderMap);
             }
         }
@@ -171,8 +181,8 @@ public class HttpRetrieval {
     }
 
     /**
-     * Builds an HttpClient instance, fully configured by the settings and
-     * defaults of this instance.
+     * Builds an HttpClient instance, fully configured by the settings and defaults
+     * of this instance.
      *
      * @return fully configured HttpClient
      */
@@ -180,18 +190,18 @@ public class HttpRetrieval {
         int timeoutMillis = (int) getTimeout().toMillis();
 
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeoutMillis)
-                .setConnectionRequestTimeout(timeoutMillis)
-                .setSocketTimeout(timeoutMillis)
-                .setMaxRedirects(getMaximumFollowedRedirects())
-                .setContentCompressionEnabled(true)
-                .build();
+            .setConnectTimeout(timeoutMillis)
+            .setConnectionRequestTimeout(timeoutMillis)
+            .setSocketTimeout(timeoutMillis)
+            .setMaxRedirects(getMaximumFollowedRedirects())
+            .setContentCompressionEnabled(true)
+            .build();
 
         HttpClient client = getHttpClientBuilder()
-                .setDefaultRequestConfig(config)
-                .setUserAgent(getUserAgent())
-                .setContentDecoderRegistry(getContentDecoderMap())
-                .build();
+            .setDefaultRequestConfig(config)
+            .setUserAgent(getUserAgent())
+            .setContentDecoderRegistry(getContentDecoderMap())
+            .build();
 
         return client;
     }
@@ -229,17 +239,16 @@ public class HttpRetrieval {
     }
 
     /**
-     * Requests the given URL using a GET request. Return value only indicates
-     * very basic network-level success, hiding any Exceptions that might get
-     * thrown on lower layers. Indication of basic success does not interpret
-     * the actual HTTP response, it just means that we have a response that can
-     * be further interpreted by the caller (could still yield HTTP errors such
-     * as 404 or 503).
+     * Requests the given URL using a GET request. Return value only indicates very
+     * basic network-level success, hiding any Exceptions that might get thrown on
+     * lower layers. Indication of basic success does not interpret the actual HTTP
+     * response, it just means that we have a response that can be further
+     * interpreted by the caller (could still yield HTTP errors such as 404 or 503).
      *
      * @param url URL to request
      * @return boolean Basic network level success? (i.e. do we have an HTTP
-     * response? The return value does not interpret actual HTTP
-     * status/response!)
+     *         response? The return value does not interpret actual HTTP
+     *         status/response!)
      */
     public boolean requestByGet(final CharSequence url) {
         httpResponse = null;
@@ -298,12 +307,12 @@ public class HttpRetrieval {
 
     /**
      * Returns the last location which was retrieved. This specifies the actual
-     * location of retrieved information after following all redirects, if any.
-     * See {@link #getLastRequestedLocation()} if you need the originally
-     * requested location.
+     * location of retrieved information after following all redirects, if any. See
+     * {@link #getLastRequestedLocation()} if you need the originally requested
+     * location.
      *
      * @return last retrieved location (usually a URL) after following all
-     * redirects; null if retrieval failed or no URL has been requested yet
+     *         redirects; null if retrieval failed or no URL has been requested yet
      */
     public String getLastRetrievedLocation() {
         if (httpResponse == null || httpClientContext == null) {
@@ -318,19 +327,18 @@ public class HttpRetrieval {
             URI lastRedirectLocation = redirectLocations.get(redirectLocations.size() - 1);
 
             // NOTE: I assume we always have a valid (not malformed) URL as
-            //       result because we retrieved data from there via HTTP(S).
-            //       However, calling URI#toURL() may still throw an Exception
-            //       by signature, so we just tell the URI to encode its content
-            //       which _should_ have the same result in this case.
+            // result because we retrieved data from there via HTTP(S).
+            // However, calling URI#toURL() may still throw an Exception
+            // by signature, so we just tell the URI to encode its content
+            // which _should_ have the same result in this case.
             return lastRedirectLocation.toASCIIString();
         }
     }
 
     /**
-     * Returns the response body as a byte array. If transfer had been
-     * compressed, this method will not return the raw compressed data but
-     * instead yield the uncompressed result, so consumers do not need to care
-     * about compression.
+     * Returns the response body as a byte array. If transfer had been compressed,
+     * this method will not return the raw compressed data but instead yield the
+     * uncompressed result, so consumers do not need to care about compression.
      *
      * @return response body
      */
@@ -376,8 +384,7 @@ public class HttpRetrieval {
     }
 
     /**
-     * Checks if the response had a "good" status code indicating a full
-     * response.
+     * Checks if the response had a "good" status code indicating a full response.
      *
      * @see checkCompleteContentResponseStatus for details
      * @return Did the response indicate complete content retrieval?
@@ -394,8 +401,7 @@ public class HttpRetrieval {
 
     /**
      * Checks if the given status code indicates a full response. This excludes
-     * partial responses (such as 206) as the retrieved bytes would not be
-     * complete.
+     * partial responses (such as 206) as the retrieved bytes would not be complete.
      *
      * @param statusCode status code to check
      * @return Does the status code indicate complete content retrieval?
