@@ -1,5 +1,6 @@
 package de.energiequant.common.webdataretrieval;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -9,8 +10,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -19,7 +22,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -28,25 +30,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.InputStreamFactory;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.InputStreamFactory;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.protocol.RedirectLocations;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.hamcrest.junit.ExpectedException;
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,12 +61,15 @@ import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 
+import de.energiequant.common.webdataretrieval.HttpRetrieval.CompletedHttpResponse;
 import uk.org.lidalia.slf4jext.Level;
 import uk.org.lidalia.slf4jtest.LoggingEvent;
 import uk.org.lidalia.slf4jtest.TestLogger;
 import uk.org.lidalia.slf4jtest.TestLoggerFactory;
 
 @RunWith(DataProviderRunner.class)
+// @RunWith(PowerMockRunner.class)
+// @PowerMockRunnerDelegate(DataProviderRunner.class)
 public class HttpRetrievalTest {
 
     TestLogger testLogger = TestLoggerFactory.getTestLogger(HttpRetrieval.class);
@@ -568,7 +572,7 @@ public class HttpRetrievalTest {
         HttpRetrieval httpRetrieval = new HttpRetrieval();
 
         // Act
-        HttpClient res = httpRetrieval.buildHttpClient();
+        CloseableHttpClient res = httpRetrieval.buildHttpClient();
 
         // Assert
         assertThat(res, is(not(nullValue())));
@@ -577,7 +581,7 @@ public class HttpRetrievalTest {
     @Test
     public void testBuildHttpClient_setTimeout_appliedToDefaultRequestConfigConnectTimeout() {
         // Arrange
-        int expectedTimeout = 121314;
+        long expectedTimeout = 121314;
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
@@ -588,14 +592,16 @@ public class HttpRetrievalTest {
 
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
-        int actualTimeout = requestConfig.getConnectTimeout();
-        assertThat(actualTimeout, is(expectedTimeout));
+        long actualTimeoutDuration = requestConfig.getConnectTimeout().getDuration();
+        TimeUnit actualTimeoutUnit = requestConfig.getConnectTimeout().getTimeUnit();
+        assertThat(actualTimeoutUnit, is(TimeUnit.MILLISECONDS));
+        assertThat(actualTimeoutDuration, is(expectedTimeout));
     }
 
     @Test
     public void testBuildHttpClient_setTimeout_appliedToDefaultRequestConfigConnectionRequestTimeout() {
         // Arrange
-        int expectedTimeout = 321321;
+        long expectedTimeout = 321321;
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
         when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
@@ -606,26 +612,10 @@ public class HttpRetrievalTest {
 
         // Assert
         RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
-        int actualTimeout = requestConfig.getConnectionRequestTimeout();
-        assertThat(actualTimeout, is(expectedTimeout));
-    }
-
-    @Test
-    public void testBuildHttpClient_setTimeout_appliedToDefaultRequestConfigSocketTimeout() {
-        // Arrange
-        int expectedTimeout = 9876;
-        HttpRetrieval spy = spy(HttpRetrieval.class);
-        HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
-        when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
-        spy.setTimeout(Duration.ofMillis(expectedTimeout));
-
-        // Act
-        spy.buildHttpClient();
-
-        // Assert
-        RequestConfig requestConfig = getRequestConfigFromInvocations(mockingDetails(spyBuilder).getInvocations());
-        int actualTimeout = requestConfig.getSocketTimeout();
-        assertThat(actualTimeout, is(expectedTimeout));
+        long actualTimeoutDuration = requestConfig.getConnectionRequestTimeout().getDuration();
+        TimeUnit actualTimeoutUnit = requestConfig.getConnectionRequestTimeout().getTimeUnit();
+        assertThat(actualTimeoutUnit, is(TimeUnit.MILLISECONDS));
+        assertThat(actualTimeoutDuration, is(expectedTimeout));
     }
 
     @Test
@@ -678,22 +668,23 @@ public class HttpRetrievalTest {
         verify(spyBuilder).setUserAgent(expectedUserAgent);
     }
 
-    @Test
-    public void testBuildHttpClient_anyConfig_setsContentDecoderRegistry() {
-        // Arrange
-        HttpRetrieval spy = spy(HttpRetrieval.class);
-        HttpClientBuilder spyBuilder = spy(HttpClientBuilder.class);
-        when(spy.getHttpClientBuilder()).thenReturn(spyBuilder);
-        Map<String, InputStreamFactory> expectedMap = spy.getContentDecoderMap();
-
-        // Act
-        spy.buildHttpClient();
-
-        // Assert
-        // NOTE: this test relies on getContentDecoderMap returning the same
-        // instance for every call
-        verify(spyBuilder).setContentDecoderRegistry(expectedMap);
-    }
+    /*
+     * FIXME: map instance can no longer be shared, test does not work the old way
+     * any more
+     */
+    /*
+     * @Test public void testBuildHttpClient_anyConfig_setsContentDecoderRegistry()
+     * { // Arrange HttpRetrieval spy = spy(HttpRetrieval.class); HttpClientBuilder
+     * spyBuilder = spy(HttpClientBuilder.class);
+     * when(spy.getHttpClientBuilder()).thenReturn(spyBuilder); Map<String,
+     * InputStreamFactory> expectedMap = spy.getContentDecoderMap();
+     * 
+     * // Act spy.buildHttpClient();
+     * 
+     * // Assert // NOTE: this test relies on getContentDecoderMap returning the
+     * same // instance for every call
+     * verify(spyBuilder).setContentDecoderRegistry(expectedMap); }
+     */
 
     @Test
     public void testGetContentDecoderMap_calledTwice_returnsSameInstance() {
@@ -738,10 +729,12 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    public void testRequestByGet_supportedProtocol_invokesBuildHttpClient() {
+    public void testRequestByGet_supportedProtocol_invokesBuildHttpClient() throws IOException {
         // Arrange
         HttpRetrieval spy = spy(HttpRetrieval.class);
-        when(spy.buildHttpClient()).thenReturn(mock(HttpClient.class));
+        when(spy.buildHttpClient()).thenReturn(mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS));
+
+        doNothing().when(spy).onHttpResponseCompleted(Mockito.any());
 
         // Act
         spy.requestByGet("http://a.local/");
@@ -753,13 +746,15 @@ public class HttpRetrievalTest {
     }
 
     @Test
-    public void testRequestByGet_supportedProtocol_invokesBuildHttpGetPassingUrl() {
+    public void testRequestByGet_supportedProtocol_invokesBuildHttpGetPassingUrl() throws Exception {
         // Arrange
         String url = "http://a.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mock(HttpGet.class));
+
+        doNothing().when(spy).onHttpResponseCompleted(Mockito.any());
 
         // Act
         spy.requestByGet(url);
@@ -774,9 +769,11 @@ public class HttpRetrievalTest {
         String url = "http://a.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
+
+        doNothing().when(spy).onHttpResponseCompleted(Mockito.any());
 
         // Act
         spy.requestByGet(url);
@@ -791,10 +788,12 @@ public class HttpRetrievalTest {
         String url = "http://b.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        when(mockClient.execute(mockGet)).thenReturn(mock(HttpResponse.class));
+        when(mockClient.execute(mockGet)).thenReturn(mock(CloseableHttpResponse.class));
+
+        doNothing().when(spy).onHttpResponseCompleted(Mockito.any());
 
         // Act
         spy.requestByGet(url);
@@ -811,10 +810,12 @@ public class HttpRetrievalTest {
         String url = "http://a.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        when(mockClient.execute(mockGet)).thenReturn(mock(HttpResponse.class));
+        when(mockClient.execute(mockGet)).thenReturn(mock(CloseableHttpResponse.class));
+
+        doNothing().when(spy).onHttpResponseCompleted(Mockito.any());
 
         // Act
         boolean res = spy.requestByGet(url);
@@ -829,17 +830,19 @@ public class HttpRetrievalTest {
         String url = "http://a.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
-        HttpResponse mockResponse = mock(HttpResponse.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
+        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
         when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenReturn(mockResponse);
+
+        doNothing().when(spy).onHttpResponseCompleted(Mockito.any());
 
         // Act
         spy.requestByGet(url);
 
         // Assert
-        assertThat(spy.httpResponse, is(mockResponse));
+        verify(spy).onHttpResponseCompleted(Mockito.same(mockResponse));
     }
 
     @Test
@@ -848,10 +851,10 @@ public class HttpRetrievalTest {
         String url = "";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
-        spy.httpResponse = mock(HttpResponse.class);
+        spy.httpResponse = mock(CompletedHttpResponse.class);
 
         // Act
         spy.requestByGet(url);
@@ -865,10 +868,9 @@ public class HttpRetrievalTest {
         // Arrange
         String url = null;
         HttpRetrieval spy = spy(HttpRetrieval.class);
-        HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
-        spy.httpResponse = mock(HttpResponse.class);
+        spy.httpResponse = mock(CompletedHttpResponse.class);
 
         // Act
         spy.requestByGet(url);
@@ -883,11 +885,11 @@ public class HttpRetrievalTest {
         String url = "";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(mockGet)).thenThrow(IOException.class);
-        spy.httpResponse = mock(HttpResponse.class);
+        spy.httpResponse = mock(CompletedHttpResponse.class);
 
         // Act
         spy.requestByGet(url);
@@ -902,7 +904,7 @@ public class HttpRetrievalTest {
         String url = "http://a.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenThrow(IOException.class);
@@ -917,11 +919,11 @@ public class HttpRetrievalTest {
     @Test
     public void testRequestByGet_retrievalFailsWithException_logsWarning() throws IOException {
         // Arrange
-        Class expectedThrowable = IOException.class;
+        Class<? extends Throwable> expectedThrowable = IOException.class;
         String url = "http://a.local/";
         HttpRetrieval spy = spy(HttpRetrieval.class);
         HttpGet mockGet = mock(HttpGet.class);
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         when(spy.buildHttpClient()).thenReturn(mockClient);
         when(spy.buildHttpGet(url)).thenReturn(mockGet);
         when(mockClient.execute(same(mockGet), Mockito.any(HttpClientContext.class))).thenThrow(expectedThrowable);
@@ -1040,135 +1042,111 @@ public class HttpRetrievalTest {
         assertThat(bytes, is(nullValue()));
     }
 
-    @Test
-    public void testGetResponseBodyBytes_ioExceptionThrown_returnsNull() throws IOException {
-        // Arrange
-        Exception expectedException = new IOException("expected exception");
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = mock(HttpResponse.class);
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockEntity.getContent()).thenThrow(expectedException);
-        when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
+    // FIXME: response body bytes are now read during retrieval
+    /*
+     * @Test public void testGetResponseBodyBytes_ioExceptionThrown_returnsNull()
+     * throws IOException { // Arrange Exception expectedException = new
+     * IOException("expected exception"); HttpRetrieval httpRetrieval = new
+     * HttpRetrieval(); httpRetrieval.httpResponse =
+     * mock(CloseableHttpResponse.class); HttpEntity mockEntity =
+     * mock(HttpEntity.class);
+     * when(mockEntity.getContent()).thenThrow(expectedException);
+     * when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
+     * 
+     * // Act byte[] bytes = httpRetrieval.getResponseBodyBytes();
+     * 
+     * // Assert assertThat(bytes, is(nullValue())); }
+     * 
+     * @Test public void
+     * testGetResponseBodyBytes_unsupportedOperationExceptionThrown_returnsNull()
+     * throws IOException { // Arrange Exception expectedException = new
+     * UnsupportedOperationException("expected exception"); HttpRetrieval
+     * httpRetrieval = new HttpRetrieval(); httpRetrieval.httpResponse =
+     * mock(CloseableHttpResponse.class); HttpEntity mockEntity =
+     * mock(HttpEntity.class);
+     * when(mockEntity.getContent()).thenThrow(expectedException);
+     * when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
+     * 
+     * // Act byte[] bytes = httpRetrieval.getResponseBodyBytes();
+     * 
+     * // Assert assertThat(bytes, is(nullValue())); }
+     * 
+     * @Test public void testGetResponseBodyBytes_ioExceptionThrown_logsWarning()
+     * throws IOException { // Arrange Exception expectedException = new
+     * IOException("expected exception"); HttpRetrieval httpRetrieval = new
+     * HttpRetrieval(); httpRetrieval.httpResponse =
+     * mock(CloseableHttpResponse.class); HttpEntity mockEntity =
+     * mock(HttpEntity.class);
+     * when(mockEntity.getContent()).thenThrow(expectedException);
+     * when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
+     * 
+     * // Act httpRetrieval.getResponseBodyBytes();
+     * 
+     * // Assert // it seems we can not easily compare events which wrap a Throwable
+     * :( List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
+     * assertThat(loggingEvents.size(), is(1)); LoggingEvent actualEvent =
+     * loggingEvents.iterator().next(); assertThat(actualEvent.getMessage(),
+     * is("Failed to copy bytes from HTTP response.")); Throwable actualThrowable =
+     * actualEvent.getThrowable().get(); assertThat(actualThrowable,
+     * is(expectedException)); }
+     * 
+     * @Test public void
+     * testGetResponseBodyBytes_unsupportedOperationExceptionThrown_logsWarning()
+     * throws IOException { // Arrange Exception expectedException = new
+     * UnsupportedOperationException("expected exception"); HttpRetrieval
+     * httpRetrieval = new HttpRetrieval(); httpRetrieval.httpResponse =
+     * mock(CloseableHttpResponse.class); HttpEntity mockEntity =
+     * mock(HttpEntity.class);
+     * when(mockEntity.getContent()).thenThrow(expectedException);
+     * when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
+     * 
+     * // Act httpRetrieval.getResponseBodyBytes();
+     * 
+     * // Assert // it seems we can not easily compare events which wrap a Throwable
+     * :( List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
+     * assertThat(loggingEvents.size(), is(1)); LoggingEvent actualEvent =
+     * loggingEvents.iterator().next(); assertThat(actualEvent.getMessage(),
+     * is("Failed to copy bytes from HTTP response.")); Throwable actualThrowable =
+     * actualEvent.getThrowable().get(); assertThat(actualThrowable,
+     * is(expectedException)); }
+     * 
+     * @Test public void testGetResponseBodyBytes_withResponse_returnsBodyBytes()
+     * throws IOException { // Arrange byte[] expectedBytes = new byte[] { 'A', 'B',
+     * 'C', '\n', '1', '2', '3', 0, 1, 2, 3 }; HttpRetrieval httpRetrieval = new
+     * HttpRetrieval(); httpRetrieval.httpResponse =
+     * mock(CloseableHttpResponse.class); HttpEntity mockEntity =
+     * mock(HttpEntity.class); when(mockEntity.getContent()).thenReturn(new
+     * ByteArrayInputStream(expectedBytes));
+     * when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
+     * 
+     * // Act byte[] actualBytes = httpRetrieval.getResponseBodyBytes();
+     * 
+     * // Assert assertThat(actualBytes, is(equalTo(expectedBytes))); }
+     */
 
-        // Act
-        byte[] bytes = httpRetrieval.getResponseBodyBytes();
-
-        // Assert
-        assertThat(bytes, is(nullValue()));
-    }
-
-    @Test
-    public void testGetResponseBodyBytes_unsupportedOperationExceptionThrown_returnsNull() throws IOException {
-        // Arrange
-        Exception expectedException = new UnsupportedOperationException("expected exception");
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = mock(HttpResponse.class);
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockEntity.getContent()).thenThrow(expectedException);
-        when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-
-        // Act
-        byte[] bytes = httpRetrieval.getResponseBodyBytes();
-
-        // Assert
-        assertThat(bytes, is(nullValue()));
-    }
-
-    @Test
-    public void testGetResponseBodyBytes_ioExceptionThrown_logsWarning() throws IOException {
-        // Arrange
-        Exception expectedException = new IOException("expected exception");
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = mock(HttpResponse.class);
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockEntity.getContent()).thenThrow(expectedException);
-        when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-
-        // Act
-        httpRetrieval.getResponseBodyBytes();
-
-        // Assert
-        // it seems we can not easily compare events which wrap a Throwable :(
-        List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
-        assertThat(loggingEvents.size(), is(1));
-        LoggingEvent actualEvent = loggingEvents.iterator().next();
-        assertThat(actualEvent.getMessage(), is("Failed to copy bytes from HTTP response."));
-        Throwable actualThrowable = actualEvent.getThrowable().get();
-        assertThat(actualThrowable, is(expectedException));
-    }
-
-    @Test
-    public void testGetResponseBodyBytes_unsupportedOperationExceptionThrown_logsWarning() throws IOException {
-        // Arrange
-        Exception expectedException = new UnsupportedOperationException("expected exception");
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = mock(HttpResponse.class);
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockEntity.getContent()).thenThrow(expectedException);
-        when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-
-        // Act
-        httpRetrieval.getResponseBodyBytes();
-
-        // Assert
-        // it seems we can not easily compare events which wrap a Throwable :(
-        List<LoggingEvent> loggingEvents = testLogger.getLoggingEvents();
-        assertThat(loggingEvents.size(), is(1));
-        LoggingEvent actualEvent = loggingEvents.iterator().next();
-        assertThat(actualEvent.getMessage(), is("Failed to copy bytes from HTTP response."));
-        Throwable actualThrowable = actualEvent.getThrowable().get();
-        assertThat(actualThrowable, is(expectedException));
-    }
-
-    @Test
-    public void testGetResponseBodyBytes_withResponse_returnsBodyBytes() throws IOException {
-        // Arrange
-        byte[] expectedBytes = new byte[] {
-            'A', 'B', 'C', '\n', '1', '2', '3', 0, 1, 2, 3
-        };
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = mock(HttpResponse.class);
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        when(mockEntity.getContent()).thenReturn(new ByteArrayInputStream(expectedBytes));
-        when(httpRetrieval.httpResponse.getEntity()).thenReturn(mockEntity);
-
-        // Act
-        byte[] actualBytes = httpRetrieval.getResponseBodyBytes();
-
-        // Assert
-        assertThat(actualBytes, is(equalTo(expectedBytes)));
-    }
-
-    @Test
-    public void testHasCompleteContentResponseStatus_nullResponse_returnsFalse() {
-        // Arrange
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = null;
-
-        // Act
-        boolean res = httpRetrieval.hasCompleteContentResponseStatus();
-
-        // Assert
-        assertThat(res, is(false));
-    }
-
-    @Test
-    public void testHasCompleteContentResponseStatus_withResponse_queriesCheckCompleteContentResponseStatus() {
-        // Arrange
-        HttpRetrieval spyRetrieval = spy(HttpRetrieval.class);
-        spyRetrieval.httpResponse = mock(HttpResponse.class);
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        when(spyRetrieval.httpResponse.getStatusLine()).thenReturn(mockStatusLine);
-        when(mockStatusLine.getStatusCode()).thenReturn(999);
-        when(spyRetrieval.checkCompleteContentResponseStatus(999)).thenReturn(true);
-
-        // Act
-        boolean res = spyRetrieval.hasCompleteContentResponseStatus();
-
-        // Assert
-        verify(spyRetrieval).checkCompleteContentResponseStatus(999);
-        assertThat(res, is(true));
-    }
+    // FIXME: status code is now read during retrieval
+    /*
+     * @Test public void
+     * testHasCompleteContentResponseStatus_nullResponse_returnsFalse() { // Arrange
+     * HttpRetrieval httpRetrieval = new HttpRetrieval(); httpRetrieval.httpResponse
+     * = null;
+     * 
+     * // Act boolean res = httpRetrieval.hasCompleteContentResponseStatus();
+     * 
+     * // Assert assertThat(res, is(false)); }
+     * 
+     * @Test public void
+     * testHasCompleteContentResponseStatus_withResponse_queriesCheckCompleteContentResponseStatus
+     * () { // Arrange HttpRetrieval spyRetrieval = spy(HttpRetrieval.class);
+     * spyRetrieval.httpResponse = mock(CompletedHttpResponse.class);
+     * when(spyRetrieval.httpResponse.getCode()).thenReturn(999);
+     * when(spyRetrieval.checkCompleteContentResponseStatus(999)).thenReturn(true);
+     * 
+     * // Act boolean res = spyRetrieval.hasCompleteContentResponseStatus();
+     * 
+     * // Assert verify(spyRetrieval).checkCompleteContentResponseStatus(999);
+     * assertThat(res, is(true)); }
+     */
 
     @Test
     @UseDataProvider("dataProviderCompleteContentResponseStatusCodes")
@@ -1196,37 +1174,33 @@ public class HttpRetrievalTest {
         assertThat(res, is(false));
     }
 
-    @Test
-    public void testGetResponseHeaders_nullResponse_returnsNull() {
-        // Arrange
-        HttpRetrieval httpRetrieval = new HttpRetrieval();
-        httpRetrieval.httpResponse = null;
-
-        // Act
-        CaseInsensitiveHeaders result = httpRetrieval.getResponseHeaders();
-
-        // Assert
-        assertThat(result, is(nullValue()));
-    }
-
-    @Test
-    public void testGetResponseHeaders_withResponse_returnsWithOnlyAllResponseHeadersAdded() {
-        // Arrange
-        HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
-        spyRetrieval.httpResponse = mock(HttpResponse.class);
-
-        Header[] headersArr = new Header[0];
-        when(spyRetrieval.httpResponse.getAllHeaders()).thenReturn(headersArr);
-
-        doReturn(mock(CaseInsensitiveHeaders.class)).when(spyRetrieval).createCaseInsensitiveHeaders();
-
-        // Act
-        CaseInsensitiveHeaders mockHeaders = spyRetrieval.getResponseHeaders();
-
-        // Assert
-        verify(mockHeaders).addAll(Mockito.same(headersArr));
-        verifyNoMoreInteractions(mockHeaders);
-    }
+    // FIXME: response headers are now read during retrieval
+    /*
+     * @Test public void testGetResponseHeaders_nullResponse_returnsNull() { //
+     * Arrange HttpRetrieval httpRetrieval = new HttpRetrieval();
+     * httpRetrieval.httpResponse = null;
+     * 
+     * // Act CaseInsensitiveHeaders result = httpRetrieval.getResponseHeaders();
+     * 
+     * // Assert assertThat(result, is(nullValue())); }
+     * 
+     * @Test public void
+     * testGetResponseHeaders_withResponse_returnsWithOnlyAllResponseHeadersAdded()
+     * { // Arrange HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
+     * spyRetrieval.httpResponse = mock(CompletedHttpResponse.class);
+     * 
+     * Header[] headersArr = new Header[0];
+     * when(spyRetrieval.httpResponse.getHeaders()).thenReturn(headersArr);
+     * 
+     * doReturn(mock(CaseInsensitiveHeaders.class)).when(spyRetrieval).
+     * createCaseInsensitiveHeaders();
+     * 
+     * // Act CaseInsensitiveHeaders mockHeaders =
+     * spyRetrieval.getResponseHeaders();
+     * 
+     * // Assert verify(mockHeaders).addAll(Mockito.same(headersArr));
+     * verifyNoMoreInteractions(mockHeaders); }
+     */
 
     @Test
     public void testGetLastRequestedLocation_beforeRequest_returnsNull() {
@@ -1300,22 +1274,30 @@ public class HttpRetrievalTest {
     public void testGetLastRetrievedLocation_afterRequestManyRedirects_returnsLastRedirectLocationFromContext(String expectedUrl) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
-        when(mockContext.getRedirectLocations())
+        RedirectLocations mockRedirectLocations = mock(RedirectLocations.class);
+        when(mockRedirectLocations.getAll())
             .thenReturn(Arrays.asList(
                 new URI("http://first-redirect/abc.html"),
                 new URI("http://another.com/"),
                 new URI(expectedUrl) //
             ));
+        when(mockContext.getRedirectLocations())
+            .thenReturn(mockRedirectLocations);
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
 
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
-        HttpResponse mockResponse = mock(HttpResponse.class);
+        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(Mockito.any(HttpUriRequest.class),
             Mockito.any(HttpClientContext.class));
+
+        doAnswer(invocation -> {
+            spyRetrieval.httpResponse = mock(CompletedHttpResponse.class);
+            return null;
+        }).when(spyRetrieval).onHttpResponseCompleted(Mockito.any());
 
         spyRetrieval.requestByGet("http://this-was-originally-requested/");
 
@@ -1332,19 +1314,27 @@ public class HttpRetrievalTest {
     public void testGetLastRetrievedLocation_afterRequestNoRedirects_returnsRequestedUrl(String url) throws Exception {
         // Arrange
         HttpClientContext mockContext = mock(HttpClientContext.class);
-        when(mockContext.getRedirectLocations()).thenReturn(new ArrayList<>());
+        RedirectLocations mockRedirectLocations = mock(RedirectLocations.class);
+        when(mockRedirectLocations.getAll())
+            .thenReturn(Arrays.asList());
+        when(mockContext.getRedirectLocations()).thenReturn(mockRedirectLocations);
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
 
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
-        HttpResponse mockResponse = mock(HttpResponse.class);
+        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(
             Mockito.any(HttpUriRequest.class),
             Mockito.any(HttpClientContext.class) //
         );
+
+        doAnswer(invocation -> {
+            spyRetrieval.httpResponse = mock(CompletedHttpResponse.class);
+            return null;
+        }).when(spyRetrieval).onHttpResponseCompleted(Mockito.any());
 
         spyRetrieval.requestByGet(url);
 
@@ -1366,14 +1356,19 @@ public class HttpRetrievalTest {
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockContext, (HttpClientContext) null).when(spyRetrieval).createHttpClientContext();
 
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
-        HttpResponse mockResponse = mock(HttpResponse.class);
+        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(
-            Mockito.any(HttpUriRequest.class),
+            Mockito.any(ClassicHttpRequest.class),
             Mockito.any(HttpClientContext.class) //
         );
+
+        doAnswer(invocation -> {
+            spyRetrieval.httpResponse = mock(CompletedHttpResponse.class);
+            return null;
+        }).when(spyRetrieval).onHttpResponseCompleted(Mockito.any());
 
         spyRetrieval.requestByGet(url);
 
@@ -1391,21 +1386,29 @@ public class HttpRetrievalTest {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
-        when(mockSecondContext.getRedirectLocations()).thenReturn(Arrays.asList(
-            new URI(expectedUrl) //
-        ));
+        RedirectLocations mockRedirectLocations = mock(RedirectLocations.class);
+        when(mockRedirectLocations.getAll())
+            .thenReturn(Arrays.asList(
+                new URI(expectedUrl) //
+            ));
+        when(mockSecondContext.getRedirectLocations()).thenReturn(mockRedirectLocations);
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockFirstContext, mockSecondContext).when(spyRetrieval).createHttpClientContext();
 
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
 
-        HttpResponse mockResponse = mock(HttpResponse.class);
+        CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
         doReturn(mockResponse).when(mockClient).execute(
             Mockito.any(HttpUriRequest.class),
             Mockito.any(HttpClientContext.class) //
         );
+
+        doAnswer(invocation -> {
+            spyRetrieval.httpResponse = mock(CompletedHttpResponse.class);
+            return null;
+        }).when(spyRetrieval).onHttpResponseCompleted(Mockito.any());
 
         spyRetrieval.requestByGet("https://some-url.local/");
         spyRetrieval.requestByGet("https://some-url.local/");
@@ -1421,17 +1424,22 @@ public class HttpRetrievalTest {
     public void testGetLastRetrievedLocation_afterSecondRequestFailed_returnsNull() throws Exception {
         // Arrange
         HttpClientContext mockFirstContext = mock(HttpClientContext.class);
-        when(mockFirstContext.getRedirectLocations()).thenReturn(Arrays.asList(
-            new URI("http://unexpected.url.local/") //
-        ));
+        RedirectLocations mockRedirectLocations = mock(RedirectLocations.class);
+        when(mockRedirectLocations.getAll())
+            .thenReturn(Arrays.asList(
+                new URI("http://unexpected.url.local/") //
+            ));
+        when(mockFirstContext.getRedirectLocations()).thenReturn(mockRedirectLocations);
 
         HttpClientContext mockSecondContext = mock(HttpClientContext.class);
 
         HttpRetrieval spyRetrieval = spy(new HttpRetrieval());
         doReturn(mockFirstContext, mockSecondContext).when(spyRetrieval).createHttpClientContext();
 
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+
+        doNothing().when(spyRetrieval).onHttpResponseCompleted(Mockito.any());
 
         spyRetrieval.requestByGet("https://some-url.local/");
 
@@ -1460,8 +1468,10 @@ public class HttpRetrievalTest {
             .when(spyRetrieval)
             .createHttpClientContext();
 
-        HttpClient mockClient = mock(HttpClient.class);
+        CloseableHttpClient mockClient = mock(CloseableHttpClient.class, RETURNS_DEEP_STUBS);
         doReturn(mockClient).when(spyRetrieval).buildHttpClient();
+
+        doNothing().when(spyRetrieval).onHttpResponseCompleted(Mockito.any());
 
         spyRetrieval.requestByGet("https://some-url.local/");
 

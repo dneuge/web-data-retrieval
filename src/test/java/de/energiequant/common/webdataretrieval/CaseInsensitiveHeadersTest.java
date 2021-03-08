@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.Header;
+import org.apache.hc.core5.http.Header;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

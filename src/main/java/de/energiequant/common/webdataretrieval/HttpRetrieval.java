@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,16 +17,19 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.InputStreamFactory;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.InputStreamFactory;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.protocol.RedirectLocations;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +41,7 @@ public class HttpRetrieval {
     protected String userAgent = "HttpRetrieval";
     protected int maximumFollowedRedirects = 5;
     protected Map<String, InputStreamFactory> unmodifiableContentDecoderMap = null;
-    protected HttpResponse httpResponse = null;
+    protected CompletedHttpResponse httpResponse = null;
     private HttpClientContext httpClientContext = null;
     private String lastRequestedLocation = null;
 
@@ -47,6 +51,38 @@ public class HttpRetrieval {
         "http",
         "https"
     }));
+
+    class CompletedHttpResponse {
+        private final byte[] bytes;
+        private final int code;
+        private final Header[] headers;
+
+        CompletedHttpResponse(CloseableHttpResponse actualResponse) {
+            this.code = actualResponse.getCode();
+
+            this.headers = actualResponse.getHeaders();
+
+            byte[] bytes = null;
+            try {
+                bytes = IOUtils.toByteArray(actualResponse.getEntity().getContent());
+            } catch (IOException | UnsupportedOperationException ex) {
+                logger.warn("Failed to copy bytes from HTTP response.", ex);
+            }
+            this.bytes = bytes;
+        }
+
+        int getCode() {
+            return code;
+        }
+
+        public byte[] getEntityContent() {
+            return bytes;
+        }
+
+        public Header[] getHeaders() {
+            return headers;
+        }
+    }
 
     /**
      * Copies configuration to another instance of HttpRetrieval. Result data will
@@ -186,13 +222,12 @@ public class HttpRetrieval {
      *
      * @return fully configured HttpClient
      */
-    protected HttpClient buildHttpClient() {
+    protected CloseableHttpClient buildHttpClient() {
         int timeoutMillis = (int) getTimeout().toMillis();
 
         RequestConfig config = RequestConfig.custom()
-            .setConnectTimeout(timeoutMillis)
-            .setConnectionRequestTimeout(timeoutMillis)
-            .setSocketTimeout(timeoutMillis)
+            .setConnectTimeout(Timeout.ofMilliseconds(timeoutMillis))
+            .setConnectionRequestTimeout(Timeout.ofMilliseconds(timeoutMillis))
             .setMaxRedirects(getMaximumFollowedRedirects())
             .setContentCompressionEnabled(true)
             .build();
@@ -200,10 +235,10 @@ public class HttpRetrieval {
         HttpClient client = getHttpClientBuilder()
             .setDefaultRequestConfig(config)
             .setUserAgent(getUserAgent())
-            .setContentDecoderRegistry(getContentDecoderMap())
+            .setContentDecoderRegistry(new LinkedHashMap<String, InputStreamFactory>(getContentDecoderMap()))
             .build();
 
-        return client;
+        return (CloseableHttpClient) client;
     }
 
     /**
@@ -269,15 +304,23 @@ public class HttpRetrieval {
 
         logger.debug("requesting \"{}\" by GET method", url);
 
-        HttpClient client = buildHttpClient();
-        HttpUriRequest request = buildHttpGet(url);
+        // TODO: client should be reused according to 4.x-5.x migration guide
+        CloseableHttpClient client = buildHttpClient();
+        ClassicHttpRequest request = buildHttpGet(url);
 
         try {
             httpClientContext = createHttpClientContext();
-            httpResponse = client.execute(request, httpClientContext);
+            CloseableHttpResponse response = (CloseableHttpResponse) client.execute(request, httpClientContext);
+            onHttpResponseCompleted(response);
         } catch (IOException ex) {
             logger.warn("GET request to \"{}\" failed with an exception.", url, ex);
             return false;
+        } finally {
+            try {
+                client.close();
+            } catch (IOException ex) {
+                logger.warn("failed to close client", ex);
+            }
         }
 
         return true;
@@ -319,12 +362,13 @@ public class HttpRetrieval {
             return null;
         }
 
-        List<URI> redirectLocations = httpClientContext.getRedirectLocations();
+        RedirectLocations redirectLocations = httpClientContext.getRedirectLocations();
+        List<URI> redirectLocationsList = (redirectLocations != null) ? redirectLocations.getAll() : null;
 
-        if ((redirectLocations == null) || redirectLocations.isEmpty()) {
+        if ((redirectLocationsList == null) || redirectLocationsList.isEmpty()) {
             return getLastRequestedLocation();
         } else {
-            URI lastRedirectLocation = redirectLocations.get(redirectLocations.size() - 1);
+            URI lastRedirectLocation = redirectLocationsList.get(redirectLocationsList.size() - 1);
 
             // NOTE: I assume we always have a valid (not malformed) URL as
             // result because we retrieved data from there via HTTP(S).
@@ -347,12 +391,7 @@ public class HttpRetrieval {
             return null;
         }
 
-        try {
-            return IOUtils.toByteArray(httpResponse.getEntity().getContent());
-        } catch (IOException | UnsupportedOperationException ex) {
-            logger.warn("Failed to copy bytes from HTTP response.", ex);
-            return null;
-        }
+        return httpResponse.getEntityContent();
     }
 
     /**
@@ -365,7 +404,7 @@ public class HttpRetrieval {
             return null;
         }
 
-        Header[] arr = httpResponse.getAllHeaders();
+        Header[] arr = httpResponse.getHeaders();
 
         CaseInsensitiveHeaders container = createCaseInsensitiveHeaders();
         container.addAll(arr);
@@ -394,7 +433,7 @@ public class HttpRetrieval {
             return false;
         }
 
-        int statusCode = httpResponse.getStatusLine().getStatusCode();
+        int statusCode = httpResponse.getCode();
 
         return checkCompleteContentResponseStatus(statusCode);
     }
@@ -408,5 +447,18 @@ public class HttpRetrieval {
      */
     protected boolean checkCompleteContentResponseStatus(final int statusCode) {
         return (statusCode >= 200) && (statusCode <= 205);
+    }
+
+    /**
+     * Handles the given upstream response by wrapping it into a
+     * {@link CompletedHttpResponse} used for backwards-compatibility by this
+     * library. Closes the response after consumption.
+     * 
+     * @param response upstream response to handle and close
+     * @throws IOException
+     */
+    void onHttpResponseCompleted(CloseableHttpResponse response) throws IOException {
+        httpResponse = new CompletedHttpResponse(response);
+        response.close();
     }
 }

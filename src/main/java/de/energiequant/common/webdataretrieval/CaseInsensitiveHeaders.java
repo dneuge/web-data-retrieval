@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpEntity;
 
 /**
  * Holds headers indexed by case-insensitive keys. This applies for example to

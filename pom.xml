@@ -23,7 +23,7 @@
         <commons.io.version>2.6</commons.io.version>
         <commons.compress.version>1.19</commons.compress.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <httpcomponents.version>4.5.10</httpcomponents.version>
+        <httpcomponents.version>5.0.3</httpcomponents.version>
     </properties>
     
     <dependencies>
@@ -47,8 +47,8 @@
         </dependency>
         
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
             <version>${httpcomponents.version}</version>
         </dependency>
         
