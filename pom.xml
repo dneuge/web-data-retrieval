@@ -4,7 +4,7 @@
     <groupId>de.energiequant.common</groupId>
     <artifactId>webdataretrieval</artifactId>
     <name>Web Data Retrieval</name>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
     
     <url>https://github.com/dneuge/web-data-retrieval</url>
