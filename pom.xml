@@ -7,7 +7,7 @@
 	<artifactId>webdataretrieval</artifactId>
 	<name>Web Data Retrieval</name>
 	<description>helper library for common web-based data retrieval tasks</description>
-	<version>0.2-SNAPSHOT</version>
+	<version>0.2.1</version>
 	<packaging>jar</packaging>
 
 	<url>https://github.com/dneuge/web-data-retrieval</url>
