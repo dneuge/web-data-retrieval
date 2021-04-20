@@ -5,7 +5,7 @@ import java.time.Instant;
 /**
  * Holds meta data information about a retrieved data object.
  * <p>
- * {@link DefaultHttpRetrievalDecoders#withMetadata(java.util.function.Function)}
+ * {@link DefaultHttpRetrievalDecoders#withMetaData(java.util.function.Function)}
  * can be used to easily wrap decoded information into this container with a
  * {@link HttpPromiseBuilder}.
  * </p>
