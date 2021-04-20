@@ -42,6 +42,14 @@
 		<url>https://github.com/dneuge/web-data-retrieval</url>
 	</scm>
 
+	<developers>
+		<developer>
+			<name>Daniel Neugebauer</name>
+			<email>dneuge@energiequant.de</email>
+			<url>http://www.energiequant.de/</url>
+		</developer>
+	</developers>
+
 	<dependencies>
 		<!-- runtime dependencies -->
 		<dependency>
