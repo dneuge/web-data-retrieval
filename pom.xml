@@ -128,6 +128,11 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<excludes>
+						<exclude>**/ManualTest*</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 
 			<plugin>
@@ -142,6 +147,11 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<sourceFileExcludes>
+						<sourceFileExcludes>**/ManualTest*</sourceFileExcludes>
+					</sourceFileExcludes>
+				</configuration>
 			</plugin>
 
 			<plugin>
