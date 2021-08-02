@@ -26,7 +26,7 @@
 
 		<!-- runtime dependencies -->
 		<commons.io.version>[2.7,2.9)</commons.io.version>
-		<commons.compress.version>1.19</commons.compress.version>
+		<commons.compress.version>1.21</commons.compress.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<httpcomponents.version>5.0.3</httpcomponents.version>
 
