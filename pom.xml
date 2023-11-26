@@ -36,6 +36,7 @@
         <junitdataprovider.version>1.13.1</junitdataprovider.version>
         <mockito.version>3.12.4</mockito.version>
         <slf4jtest.version>1.2.0</slf4jtest.version>
+        <jacoco.version>0.8.11</jacoco.version>
 
         <!-- build dependencies -->
         <maven.compiler.version>3.8.1</maven.compiler.version>
@@ -175,7 +176,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.2</version>
+                <version>${jacoco.version}</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
