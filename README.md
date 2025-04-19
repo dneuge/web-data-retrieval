@@ -12,7 +12,7 @@ This library wraps [Apache HttpComponents](http://hc.apache.org/) HttpClient to 
 ## Early Deprecation Warning
 
 Modern Java (e.g. 17 or later) comes with good HTTP retrieval support already included which means you probably
-don't need this library unless you want to still want to support Java 8 or 11. This project will probably not be
+don't need this library unless you still want to support Java 8 or 11. This project will probably not be
 developed any further, only maintenance release will be made when necessary.
 
 ## Examples
