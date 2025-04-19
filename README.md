@@ -1,7 +1,7 @@
 # Web Data Retrieval Helper
 
 [![Coverage Status](https://coveralls.io/repos/github/dneuge/web-data-retrieval/badge.svg?branch=master)](https://coveralls.io/github/dneuge/web-data-retrieval?branch=master)
-[![Maven Central](https://img.shields.io/maven-central/v/de.energiequant.common/webdataretrieval.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22de.energiequant.common%22%20AND%20a:%22webdataretrieval%22)
+[![Maven Central](https://img.shields.io/maven-central/v/de.energiequant.common/webdataretrieval.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/de.energiequant.common/webdataretrieval)
 [![JavaDoc](https://javadoc.io/badge2/de.energiequant.common/webdataretrieval/javadoc.svg)](https://javadoc.io/doc/de.energiequant.common/webdataretrieval)
 [![License: MIT with dependencies](https://img.shields.io/badge/license-MIT%20w%2F%20deps-blue.svg)](LICENSE.md)
 
