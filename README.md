@@ -9,6 +9,12 @@ Just another small helper library for common web-based data retrieval tasks.
 
 This library wraps [Apache HttpComponents](http://hc.apache.org/) HttpClient to make it more accessible for easier data retrieval and processing.
 
+## Early Deprecation Warning
+
+Modern Java (e.g. 17 or later) comes with good HTTP retrieval support already included which means you probably
+don't need this library unless you want to still want to support Java 8 or 11. This project will probably not be
+developed any further, only maintenance release will be made when necessary.
+
 ## Examples
 
 ### Basic GET retrieval
