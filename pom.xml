@@ -25,10 +25,10 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <!-- runtime dependencies -->
-        <commons.io.version>[2.7,2.11.999]</commons.io.version>
-        <commons.compress.version>1.21</commons.compress.version>
+        <commons.io.version>[2.12,2.19.999]</commons.io.version>
+        <commons.compress.version>[1.22,1.27.999]</commons.compress.version>
         <slf4j.version>[1.7.25,1.7.999]</slf4j.version>
-        <httpcomponents.version>[5.0.4,5.1.999]</httpcomponents.version>
+        <httpcomponents.version>[5.0.4,5.4.999]</httpcomponents.version>
 
         <!-- test dependencies -->
         <hamcrest.junit.version>2.0.0.0</hamcrest.junit.version>
